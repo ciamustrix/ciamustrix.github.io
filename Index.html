@@ -254,7 +254,7 @@
             
             <div class="mt-8 text-center border-t border-gray-200/50 pt-4">
                 <p class="text-xs text-gray-500 font-medium mb-1">โรงเรียนวังตะเคียนวิทยาคม | ฝ่ายบริหารงานวิชาการ</p>
-                <p class="text-[10px] text-sky-700/60 font-bold tracking-wide">V 1.03.03.11 [August 1st, 2025 - 23.59] | TESTING-f(SLC)</p>
+                <p class="text-[10px] text-sky-700/60 font-bold tracking-wide">V 1.03.04 [August 21sT, 2025 - 11.30] | TESTING-f(Sv)</p>
                 <p class="text-xs text-gray-500 font-medium mb-1">Dev. by Thuntathorn 😁</p>
             </div>
         </div>
@@ -3921,6 +3921,47 @@
 
     <!-- Application Script (Google Apps Script Version) -->
     <script>
+        // ⏰ ระบบตรวจสอบสถานะเวลาคาบเรียน (อัปเกรดความแม่นยำ)
+        window.getSupTimeStatus = function(targetDateStr, periodStr) {
+            if (!targetDateStr || !periodStr) return { state: 'READY', text: '', canEval: true };
+
+            const periodTimes = {
+                "1": { start: "08:30", end: "09:20" },
+                "2": { start: "09:20", end: "10:10" },
+                "3": { start: "10:10", end: "11:00" },
+                "4": { start: "11:00", end: "11:50" },
+                "5": { start: "12:40", end: "13:30" },
+                "6": { start: "13:30", end: "14:20" },
+                "7": { start: "14:20", end: "15:10" },
+                "8": { start: "15:10", end: "16:00" },
+                "9": { start: "16:00", end: "16:50" }
+            };
+
+            const now = new Date();
+            const targetDate = new Date(targetDateStr);
+            
+            // รีเซ็ตเวลาเป็นเที่ยงคืนเพื่อเทียบแค่วันที่ล้วนๆ
+            const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+            const targetOnly = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate()).getTime();
+
+            // 1. เช็ควันที่ก่อนเลย
+            if (targetOnly > todayOnly) return { state: 'WAIT', text: '⏳ ยังไม่ถึงวันนิเทศ', canEval: false };
+            if (targetOnly < todayOnly) return { state: 'LATE', text: '⚠️ กรุณาประเมินย้อนหลังด้วยครับ', canEval: true };
+
+            // 2. ถ้าเป็น "วันนี้" ให้เช็คเวลาคาบ
+            const pInfo = periodTimes[String(periodStr)];
+            if (!pInfo) return { state: 'READY', text: '', canEval: true }; 
+
+            const [startH, startM] = pInfo.start.split(':').map(Number);
+            const [endH, endM] = pInfo.end.split(':').map(Number);
+            
+            const startTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), startH, startM, 0);
+            const endTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), endH, endM, 0);
+
+            if (now < startTime) return { state: 'WAIT', text: `⏳ ยังไม่ถึงคาบสอน (เริ่ม ${pInfo.start} น.)`, canEval: false };
+            if (now > endTime) return { state: 'LATE', text: '⚠️ กรุณาประเมินย้อนหลังด้วยครับ', canEval: true };
+            return { state: 'READY', text: '🟢 กำลังดำเนินการสอน', canEval: true };
+        };
         // 🔄 ดึงผังที่นั่งเก่ามาใช้
         window.loadPreviousClassLayout = function() {
             // สมมติว่าแกมีตัวแปรดึงชื่อวิชาอยู่ (ถ้า id ไม่ตรง แกแก้ตรง document.getElementById ให้ตรงกับช่องที่แกใช้นะ)
@@ -4307,7 +4348,7 @@
         let tempAdminProfileBase64 = null;
         let currentThemeObj = { from: 'from-emerald-500', to: 'to-teal-600', border: 'border-emerald-600' };
 
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwJLOZUlrJkSwYNA2J-XjeUPP2NPjR1PBqNSWbTwWJCh-OF_bMLpHnQElFfwBYBWdCE/exec"; 
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxZVUxqObGGimip5rYiFoX84PMo1qMU114upvhFxrkU_0kMDplFB3foqOqMUl4qob9x/exec"; 
         const START_WEEK_DATE = new Date(2026, 4, 11); 
         
         const ROLE_NAMES_TH = {
@@ -10308,22 +10349,44 @@ window.deleteLog = function(logId) {
             }
 
             mySups.sort((a,b) => new Date(b.ReqDate) - new Date(a.ReqDate)).forEach(s => {
+                const isRejected = (s.Sup1_Status === 'Rejected' || s.Sup2_Status === 'Rejected' || s.Sup3_Status === 'Rejected');
+
                 let statusBadge = '';
-                if(s.Status === 'Pending') statusBadge = '<span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-[10px]">รอจัดกรรมการ</span>';
-                else if(s.Status === 'Assigned') statusBadge = '<span class="bg-sky-100 text-sky-600 px-2 py-1 rounded text-[10px] animate-pulse">รอนิเทศ</span>';
-                else if(s.Status === 'Evaluated') statusBadge = '<span class="bg-emerald-100 text-emerald-600 px-2 py-1 rounded text-[10px]">ประเมินแล้ว</span>';
+                if (isRejected) {
+                    statusBadge = '<span class="bg-rose-100 text-rose-600 px-2 py-1 rounded text-[10px] font-bold animate-pulse border border-rose-300">❌ ถูกปฏิเสธ</span>';
+                } else if(s.Status === 'Pending') {
+                    statusBadge = '<span class="bg-amber-100 text-amber-600 px-2 py-1 rounded text-[10px] font-bold">⏳ รอการตอบรับ</span>';
+                } else if(s.Status === 'Assigned') {
+                    statusBadge = '<span class="bg-sky-100 text-sky-600 px-2 py-1 rounded text-[10px] font-bold animate-pulse">🎯 รอนิเทศ</span>';
+                } else if(s.Status === 'Evaluated') {
+                    statusBadge = '<span class="bg-emerald-100 text-emerald-600 px-2 py-1 rounded text-[10px] font-bold">✅ ประเมินแล้ว</span>';
+                }
 
                 const dDate = new Date(s.TargetDate).toLocaleDateString('th-TH', { day:'numeric', month:'short', year:'2-digit' });
-                const roundBadge = `<span class="bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded text-[9px] font-bold border border-purple-200 ml-1 whitespace-nowrap">${getSupRoundName(s.TargetDate)}</span>`;
+                const roundBadge = typeof getSupRoundName === 'function' ? `<span class="bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded text-[9px] font-bold border border-purple-200 ml-1 whitespace-nowrap">${getSupRoundName(s.TargetDate)}</span>` : '';
                 
+                // 💡 ลอจิกปุ่ม: ถ้ายังไม่ประเมิน ให้มีปุ่มลบ!
+                let actionBtn = '<span class="text-gray-300">-</span>';
+                if (s.Status === 'Evaluated') {
+                    actionBtn = `<button onclick="viewSupReceipt('${s.SupID}')" class="bg-emerald-500 text-white px-3 py-1 rounded-full text-[10px] font-bold shadow hover:bg-emerald-600">ดูผล</button>`;
+                } else {
+                    let patchBtn = isRejected ? `<button onclick="window.openPatchModal('${s.SupID}')" class="bg-rose-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold shadow hover:bg-rose-600 w-full mb-1">🔄 เปลี่ยนคน</button>` : '';
+                    actionBtn = `
+                        <div class="flex flex-col items-center justify-center">
+                            ${patchBtn}
+                            <button onclick="window.deleteSupRequestUI('${s.SupID}')" class="bg-white text-gray-500 border border-gray-300 hover:bg-red-50 hover:text-red-600 hover:border-red-300 px-3 py-1 rounded-lg text-[10px] font-bold transition-all w-full">🗑️ ยกเลิกคำขอ</button>
+                        </div>
+                    `;
+                }
+
                 tbody.innerHTML += `
                 <tr class="hover:bg-rose-50/30 transition-colors border-b border-gray-50">
                     <td class="px-4 py-3 text-center font-bold text-rose-600">${s.Period}</td>
-                    <td class="px-4 py-3 text-xs text-gray-700">${dDate} <br> ${roundBadge}</td>
+                    <td class="px-4 py-3 text-xs text-gray-700 whitespace-nowrap">${dDate} <br> ${roundBadge}</td>
                     <td class="px-4 py-3 text-xs font-bold text-gray-800">${s.SubjectData}</td>
                     <td class="px-4 py-3">${statusBadge}</td>
                     <td class="px-4 py-3 text-center">
-                        ${s.Status === 'Evaluated' ? `<button onclick="viewSupReceipt('${s.SupID}')" class="bg-emerald-500 text-white px-3 py-1 rounded-full text-[10px] font-bold shadow hover:bg-emerald-600">ดูผล</button>` : '<span class="text-gray-300">-</span>'}
+                        ${actionBtn}
                     </td>
                 </tr>`;
             });
@@ -10396,17 +10459,24 @@ window.deleteLog = function(logId) {
         // 🤖 สมองกลจัดกรรมการ (รันทันทีที่ครูเลือกคาบ) - V.Titanium Fix (บังคับรองฯ เบอร์ 1)
         window.assignedCommitteeCache = []; // เก็บความจำกรรมการไว้ส่งขึ้น DB
 
+        // 🤖 สมองกลจัดกรรมการ (Workflow 2.0: บังคับผู้บริหาร + Dropdown PLC + Dropdown รุ่นพี่)
+        window.currentAutoSup1 = ""; // เก็บชื่อคนที่ 1 ไว้ส่งตอน Submit
+
         window.runTeacherAutoAssign = function(targetPeriod, targetDay) {
             const listEl = document.getElementById('supCommitteeList');
             if(!listEl) return;
-            listEl.innerHTML = '<li class="italic text-gray-500 font-normal border border-gray-200 bg-white px-3 py-1.5 rounded-lg shadow-sm"><div class="loader loader-white border-2 border-rose-500 border-t-transparent w-3 h-3 inline-block align-middle mr-2"></div> AI กำลังค้นหากรรมการที่ว่าง...</li>';
+            listEl.innerHTML = '<li class="italic text-gray-500 font-normal border border-gray-200 bg-white px-3 py-1.5 rounded-lg shadow-sm"><div class="loader loader-white border-2 border-rose-500 border-t-transparent w-3 h-3 inline-block align-middle mr-2"></div> AI กำลังวิเคราะห์และคัดกรองกรรมการ...</li>';
             
             const reqTeacherInfo = usersDB_Global.find(u => u.FullName === currentUser.FullName) || {};
-            const reqDept = reqTeacherInfo.Department;
+            const reqDept = reqTeacherInfo.Department; // 💡 เค้าลืมประกาศตัวนี้!
             const reqSq = parseInt(reqTeacherInfo.Sq) || 999;
+            const reqDateEl = document.getElementById('supReqDate');
+            const targetDateStr = reqDateEl ? reqDateEl.value : "";
 
-// เช็คว่าคนนี้ว่างสอนในคาบนี้ไหม? (อัปเกรด V.Clone Preventer)
+            // 💡 Helper: เช็คว่าครูคนนี้ว่างไหม? (ดักชนทุกมิติ)
             const isFree = (teacherName) => {
+                if (teacherName === currentUser.FullName) return false;
+                
                 // 1. เช็คละเว้นถาวร
                 if (typeof persistentExclusions !== 'undefined') {
                     if (Array.isArray(persistentExclusions) && persistentExclusions.includes(teacherName)) return false;
@@ -10420,22 +10490,19 @@ window.deleteLog = function(logId) {
                 const tt = timetableDB_Global.find(x => x.TeacherName === teacherName && x.Day === targetDay);
                 if (tt && tt[`Period${targetPeriod}`] && tt[`Period${targetPeriod}`].trim() !== '') return false;
                 
-                // คำนวณวันที่เป้าหมายสำหรับเช็คชนกัน
-                const reqDateEl = document.getElementById('supReqDate');
-                const targetDateStr = reqDateEl ? reqDateEl.value : "";
-                
                 if (targetDateStr) {
-                    // 3. เช็คว่าติดคิว "นิเทศคนอื่น" หรือกำลัง "รับการนิเทศ" ในวันและคาบนั้นหรือไม่
+                    // 3. เช็คติดนิเทศ (เช็คจาก 6 คอลัมน์ใหม่ด้วย)
                     const isBusySupervising = supervisionDB_Global.some(s => {
                         if (s.TargetDate && s.TargetDate.split('T')[0] === targetDateStr && parseInt(s.Period) === parseInt(targetPeriod)) {
                             let sups = []; try { sups = JSON.parse(s.Supervisors || "[]"); } catch(e){}
-                            return sups.includes(teacherName) || s.TeacherName === teacherName;
+                            return sups.includes(teacherName) || s.TeacherName === teacherName ||
+                                   s.Sup1_Name === teacherName || s.Sup2_Name === teacherName || s.Sup3_Name === teacherName;
                         }
                         return false;
                     });
                     if (isBusySupervising) return false;
 
-                    // 4. เช็คว่าติดคิว "SLC Open Class" ในวันและคาบนั้นหรือไม่
+                    // 4. เช็คติด SLC
                     const isBusySLC = slcSessionsDB_Global.some(slc => {
                         if (slc.Date && slc.Date.split('T')[0] === targetDateStr && parseInt(slc.Period) === parseInt(targetPeriod)) {
                             let buddies = []; try { buddies = JSON.parse(slc.BuddyTeachers || "[]"); } catch(e){}
@@ -10445,117 +10512,89 @@ window.deleteLog = function(logId) {
                     });
                     if (isBusySLC) return false;
                 }
-
                 return true;
             };
 
-            // กรองเอาบัญชีที่ใช้ระบบได้ และตัดตัวเองออก
             const validTeachers = usersDB_Global.filter(u => u.FullName !== currentUser.FullName && (!u.Role.includes('BirdSpy') || u.Role.includes('User')));
-            
-            let selectedTeam = [null, null, null]; 
 
             // ==========================================
-            // 1. ตำแหน่งผู้บริหาร (บังคับหารองฯ เป็นอันดับ 1)
+            // 👑 กรรมการคนที่ 1: สายบริหาร & หัวหน้าหมวด (Dropdown)
             // ==========================================
             let execCandidates = validTeachers.filter(u => {
-                // จับทั้ง Role และ Department มารวมกันตัวเล็กหมด จะได้หาเจอง่ายๆ
-                const r = String(u.Role || "").toLowerCase() + " " + String(u.Department || "").toLowerCase();
-                return r.includes('depdir') || r.includes('รองผู้อำนวยการ') || r.includes('รอง ผอ') || r.includes('รอง') || 
-                       r.includes('asstdir') || r.includes('ผู้ช่วย') || 
-                       r.includes('director') || r.includes('ผอ') || 
-                       r.includes('hoa') || r.includes('วิชาการ') || r.includes('emppngn');
+                const r = String(u.Role || "").toLowerCase();
+                // ดึง ผอ., รองฯ, ผู้ช่วยฯ, วิชาการ หรือ (เป็น HOD ที่อยู่หมวดเดียวกับเรา)
+                return r.includes('director') || r.includes('depdir') || r.includes('asstdir') || r.includes('hoa') || 
+                       (r.includes('hod') && u.Department === reqDept);
             });
 
-            // ให้ค่าน้ำหนัก (เลขน้อย = โดนเลือกก่อน)
-            const getExecWeight = (u) => {
-                const r = String(u.Role || "").toLowerCase() + " " + String(u.Department || "").toLowerCase();
-                if(r.includes('depdir') || r.includes('รอง')) return 1; 
-                if(r.includes('asstdir') || r.includes('ผู้ช่วย')) return 2;
-                if(r.includes('director') || r.includes('ผอ')) return 3;
-                if(r.includes('hoa') || r.includes('วิชาการ')) return 4;
-                if(r.includes('emppngn')) return 5;
-                return 99;
-            };
-
-            execCandidates.sort((a,b) => getExecWeight(a) - getExecWeight(b));
-            
-            // หาผู้บริหารคนที่ "ว่าง" ในคาบนั้น
-            selectedTeam[0] = execCandidates.find(u => isFree(u.FullName));
-            
-            // ถ้าไม่ว่างเลยสักคน ให้ดึง Top 10 อาวุโส (Sq) มาเสียบแทน
-            if (!selectedTeam[0]) {
-                const top10 = [...validTeachers].sort((a,b) => (parseInt(a.Sq)||999) - (parseInt(b.Sq)||999)).slice(0, 10);
-                selectedTeam[0] = top10.find(u => isFree(u.FullName));
-            }
+            // กรองเอาเฉพาะคนที่ว่าง
+            const execFreeList = execCandidates.filter(u => isFree(u.FullName));
 
             // ==========================================
-            // 2. ตำแหน่ง Buddy (เอาจากกลุ่ม PLC ก่อน)
+            // 🤝 กรรมการคนที่ 2: วง PLC เดียวกัน (Dropdown)
             // ==========================================
-            let myBuddyGroup = [];
-            const effectiveGroups = typeof getEffectivePLCGroups === 'function' ? getEffectivePLCGroups() : plcGroupsDB_Global;
+            let myPLCGroup = [];
+            const effectiveGroups = typeof getEffectivePLCGroups === 'function' ? getEffectivePLCGroups() : (typeof plcGroupsDB_Global !== 'undefined' ? plcGroupsDB_Global : []);
             for (let g of effectiveGroups) {
                 if (g.Status !== 'Active') continue;
                 let mems = []; try { mems = typeof g.Members === 'string' ? JSON.parse(g.Members) : g.Members; } catch(e){}
                 if (Array.isArray(mems) && mems.includes(reqTeacherInfo.Username)) {
-                    myBuddyGroup = mems.map(username => (usersDB_Global.find(u => u.Username === username)?.FullName)).filter(name => name && name !== currentUser.FullName);
+                    myPLCGroup = mems.map(uname => (usersDB_Global.find(u => u.Username === uname)?.FullName)).filter(name => name && name !== currentUser.FullName);
                     break;
                 }
             }
-
-            let buddyCandidates = validTeachers.filter(u => myBuddyGroup.includes(u.FullName) && u.FullName !== (selectedTeam[0]?.FullName));
-            buddyCandidates.sort(() => Math.random() - 0.5);
-            selectedTeam[1] = buddyCandidates.find(u => isFree(u.FullName));
-            
-            if (!selectedTeam[1]) {
-                selectedTeam[1] = validTeachers.find(u => isFree(u.FullName) && u.FullName !== (selectedTeam[0]?.FullName));
-            }
+            const plcFreeList = validTeachers.filter(u => myPLCGroup.includes(u.FullName) && isFree(u.FullName));
 
             // ==========================================
-            // 3. ตำแหน่ง Mentor (พี่หมวด)
+            // 🌟 กรรมการคนที่ 3: รุ่นพี่/วิทยฐานะ (Sq <= เรา) (Dropdown)
             // ==========================================
-            const mentorRule = masterSwitches_Global?.SupervisionMaster?.settings?.mentorRule || 'dept_senior';
-            let mentorCandidates = [];
-
-            if (mentorRule === 'dept_senior') {
-                mentorCandidates = validTeachers.filter(u => u.Department === reqDept && (parseInt(u.Sq)||999) < reqSq && u.FullName !== (selectedTeam[0]?.FullName) && u.FullName !== (selectedTeam[1]?.FullName));
-                mentorCandidates.sort((a,b) => (parseInt(a.Sq)||999) - (parseInt(b.Sq)||999));
-                selectedTeam[2] = mentorCandidates.find(u => isFree(u.FullName));
-                
-                if (!selectedTeam[2]) {
-                    const crossMentors = validTeachers.filter(u => u.Department !== reqDept && (parseInt(u.Sq)||999) < reqSq && u.FullName !== (selectedTeam[0]?.FullName) && u.FullName !== (selectedTeam[1]?.FullName))
-                                                      .sort((a,b) => (parseInt(a.Sq)||999) - (parseInt(b.Sq)||999));
-                    selectedTeam[2] = crossMentors.find(u => isFree(u.FullName));
-                }
-            } else if (mentorRule === 'any_senior') {
-                mentorCandidates = validTeachers.filter(u => (parseInt(u.Sq)||999) < reqSq && u.FullName !== (selectedTeam[0]?.FullName) && u.FullName !== (selectedTeam[1]?.FullName));
-                mentorCandidates.sort((a,b) => (parseInt(a.Sq)||999) - (parseInt(b.Sq)||999));
-                selectedTeam[2] = mentorCandidates.find(u => isFree(u.FullName));
-            } else {
-                mentorCandidates = validTeachers.filter(u => u.FullName !== (selectedTeam[0]?.FullName) && u.FullName !== (selectedTeam[1]?.FullName));
-                mentorCandidates.sort(() => Math.random() - 0.5); // สุ่มใครก็ได้ที่ว่าง
-                selectedTeam[2] = mentorCandidates.find(u => isFree(u.FullName));
-            }
+            const seniorFreeList = validTeachers.filter(u => (parseInt(u.Sq)||999) <= reqSq && isFree(u.FullName));
 
             // ==========================================
-            // นำชื่อไปแสดงผลหน้าเว็บ!
+            // วาด HTML ลงในหน้าจอ (แปลงเป็น Dropdown ทั้ง 3 ตำแหน่ง)
             // ==========================================
-            window.assignedCommitteeCache = selectedTeam.filter(t => t !== null && t !== undefined).map(t => t.FullName);
-            
             setTimeout(() => {
-                if(window.assignedCommitteeCache.length === 0) {
-                    listEl.innerHTML = '<li class="text-rose-500 font-bold bg-rose-50 px-3 py-2 rounded-lg border border-rose-200">❌ ระบบไม่สามารถหากรรมการที่ว่างในคาบนี้ได้เลย กรุณาเปลี่ยนคาบครับ</li>';
-                } else {
-                    let html = '';
-                    const badges = ['ผู้บริหาร', 'เพื่อนครู/Buddy', 'พี่เลี้ยง/Mentor'];
-                    window.assignedCommitteeCache.forEach((name, idx) => {
-                        html += `<li class="flex justify-between items-center bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-200 mb-1 shadow-sm">
-                            <span class="text-gray-800 font-bold">👤 ${name}</span>
-                            <span class="text-[10px] bg-white text-emerald-600 px-2 py-0.5 rounded shadow-sm">${badges[idx] || 'กรรมการ'}</span>
-                        </li>`;
-                    });
-                    listEl.innerHTML = html;
-                }
-            }, 500); 
+                let html = '';
+                
+                // กล่องคนที่ 1 (เลือกผู้บริหาร/HOD)
+                let execOpts = '<option value="">-- เลือกผู้บริหาร / หัวหน้าหมวด --</option>';
+                execFreeList.forEach(t => execOpts += `<option value="${t.FullName}">${t.FullName}</option>`);
+                html += `
+                <li class="p-3 bg-rose-50 border border-rose-200 rounded-lg mb-2 shadow-sm">
+                    <div class="text-[10px] font-bold text-rose-500 mb-1">👑 กรรมการคนที่ 1 (สายบริหาร/หัวหน้าหมวด)</div>
+                    <select id="reqSelectSup1" class="w-full p-2 border border-rose-300 rounded-md text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500">
+                        ${execFreeList.length > 0 ? execOpts : '<option value="">❌ ไม่มีผู้บริหารหรือหัวหน้าหมวดว่างเลย</option>'}
+                    </select>
+                </li>`;
+
+                // กล่องคนที่ 2 (เลือก PLC)
+                let plcOpts = '<option value="">-- เลือกเพื่อนร่วมวง PLC --</option>';
+                plcFreeList.forEach(t => plcOpts += `<option value="${t.FullName}">${t.FullName}</option>`);
+                html += `
+                <li class="p-3 bg-emerald-50 border border-emerald-200 rounded-lg mb-2 shadow-sm">
+                    <div class="text-[10px] font-bold text-emerald-600 mb-1">🤝 กรรมการคนที่ 2 (วง PLC)</div>
+                    <select id="reqSelectSup2" class="w-full p-2 border border-emerald-300 rounded-md text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-500">
+                        ${plcFreeList.length > 0 ? plcOpts : '<option value="">❌ ไม่มีสมาชิก PLC ว่างในคาบนี้</option>'}
+                    </select>
+                </li>`;
+
+                // กล่องคนที่ 3 (เลือกรุ่นพี่)
+                let seniorOpts = '<option value="">-- เลือกรุ่นพี่ / ผู้ทรงคุณวุฒิ --</option>';
+                seniorFreeList.forEach(t => seniorOpts += `<option value="${t.FullName}">${t.Department ? `[${t.Department.substring(0,3)}] ` : ''}${t.FullName}</option>`);
+                html += `
+                <li class="p-3 bg-indigo-50 border border-indigo-200 rounded-lg mb-2 shadow-sm">
+                    <div class="text-[10px] font-bold text-indigo-600 mb-1">🌟 กรรมการคนที่ 3 (ผู้ทรงคุณวุฒิ)</div>
+                    <select id="reqSelectSup3" class="w-full p-2 border border-indigo-300 rounded-md text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500">
+                        ${seniorFreeList.length > 0 ? seniorOpts : '<option value="">❌ ไม่มีรุ่นพี่ว่างในคาบนี้</option>'}
+                    </select>
+                </li>`;
+
+                listEl.innerHTML = html;
+                
+                // เปิดปุ่ม Submit ให้กดได้เลย (เดี๋ยวเราไปดักเช็คการเลือกซ้ำตอนกดปุ่มแทน)
+                const btnSubmit = document.getElementById('btnSubmitSupReq');
+                if (btnSubmit) btnSubmit.disabled = false;
+            }, 400);
         };
         // 🚀 4. ดักจับตอนกดปุ่ม Submit เพื่อส่งคำขอ + ส่งชื่อกรรมการเข้า DB รวดเดียว
         document.addEventListener('DOMContentLoaded', () => {
@@ -10571,8 +10610,19 @@ window.deleteLog = function(logId) {
                     const periodEl = document.querySelector('input[name="supReqPeriod"]:checked');
                     if (!periodEl) return customAlert("กรุณาเลือกคาบเรียนที่ต้องการรับการนิเทศครับ");
 
-                    if (!window.assignedCommitteeCache || window.assignedCommitteeCache.length === 0) {
-                        return customAlert("ระบบยังไม่สามารถหากรรมการได้ กรุณาเลือกคาบอื่นครับ", "error");
+                    // ดึงค่าจาก Dropdown ทั้ง 3 ตัว
+                    const sup1Val = document.getElementById('reqSelectSup1')?.value;
+                    const sup2Val = document.getElementById('reqSelectSup2')?.value;
+                    const sup3Val = document.getElementById('reqSelectSup3')?.value;
+
+                    if (!sup1Val || !sup2Val || !sup3Val) {
+                        return customAlert("กรุณาเลือกกรรมการให้ครบทั้ง 3 ท่านครับ", "warning");
+                    }
+
+                    // 💡 เช็คห้ามเลือกกรรมการซ้ำคนกันเด็ดขาด!
+                    const uniqueSups = new Set([sup1Val, sup2Val, sup3Val]);
+                    if (uniqueSups.size !== 3) {
+                        return customAlert("❌ ห้ามเลือกกรรมการซ้ำกันครับ! กรุณาตรวจสอบและเลือกรายชื่อใหม่", "error");
                     }
 
                     const btn = document.getElementById('btnSubmitSupReq');
@@ -10594,11 +10644,18 @@ window.deleteLog = function(logId) {
                                 Period: periodNum,
                                 SubjectData: subjectData,
                                 TeacherName: currentUser.FullName,
-                                Supervisors: JSON.stringify(window.assignedCommitteeCache), // 💡 ยัดกรรมการเข้าไปเลย
-                                Status: 'Assigned', // 💡 ข้ามขั้นเป็น Assigned ทันที ไม่ต้องรอแอดมิน!
+                                Supervisors: JSON.stringify([sup1Val, sup2Val, sup3Val]), // เผื่อระบบเก่าเรียกใช้
+                                Status: 'Pending', // รอให้กรรมการกดยืนยัน!
                                 EvaluationData: JSON.stringify({}),
                                 Signatures: JSON.stringify({}),
-                                HOANote: ""
+                                HOANote: "",
+                                // ยัดลง 6 คอลัมน์ใหม่
+                                Sup1_Name: sup1Val,
+                                Sup1_Status: 'Pending',
+                                Sup2_Name: sup2Val,
+                                Sup2_Status: 'Pending',
+                                Sup3_Name: sup3Val,
+                                Sup3_Status: 'Pending'
                             }
                         };
                         
@@ -10606,14 +10663,11 @@ window.deleteLog = function(logId) {
                         const result = await res.json();
                         
                         if(result.status === 'success') {
-                            customAlert("ส่งคำขอพร้อมจัดกรรมการเสร็จสมบูรณ์!", "success");
+                            customAlert("ส่งคำขอสำเร็จ! ระบบได้บันทึกคำขอไปให้กรรมการพิจารณาแล้ว", "success");
                             newForm.reset();
                             document.getElementById('supPeriodsSection').classList.add('hidden');
-                            document.getElementById('supCommitteeList').innerHTML = '<li class="italic text-gray-500 font-normal border border-gray-200 bg-white px-3 py-1.5 rounded-lg shadow-sm">⏳ รอฝ่ายวิชาการจัดตั้งกรรมการ...</li>';
+                            document.getElementById('supCommitteeList').innerHTML = '<li class="italic text-gray-500 font-normal border border-gray-200 bg-white px-3 py-1.5 rounded-lg shadow-sm">👆 เลือกวันที่และคาบเรียนเพื่อหากรรมการ</li>';
                             
-                            // 💡 ส่งแจ้งเตือน Telegram (ถ้ามีเขียนไว้ในหลังบ้าน)
-                            // fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'notifySupervisors', data: payload.data }) });
-
                             await fetchAllDatabasesFromGAS();
                             if(typeof renderSupHistory === 'function') renderSupHistory();
                         } else {
@@ -10888,7 +10942,7 @@ window.deleteLog = function(logId) {
             if(tabName === 'mine' && typeof renderSupHistory === 'function') renderSupHistory();
             if(tabName === 'others' && typeof renderSupTasks === 'function') renderSupTasks();
         };
-        // 🎯 Tab 2: ภารกิจนิเทศของฉัน (Supervisor)
+        // 🎯 วาดการ์ดภารกิจนิเทศของฉัน (Supervisor Inbox)
         window.renderSupTasks = function() {
             const grid = document.getElementById('supTaskGrid');
             const badge = document.getElementById('supTaskBadge');
@@ -10897,24 +10951,30 @@ window.deleteLog = function(logId) {
 
             let myTasks = [];
             supervisionDB_Global.forEach(s => {
-                if(s.Status === 'Assigned' || s.Status === 'Evaluated') {
-                    try {
-                        const sups = JSON.parse(s.Supervisors || "[]");
-                        if(sups.includes(currentUser.FullName)) myTasks.push(s);
-                    } catch(e){}
+                if(s.Status === 'Pending' || s.Status === 'Assigned' || s.Status === 'Evaluated') {
+                    if (s.Sup1_Name === currentUser.FullName || s.Sup2_Name === currentUser.FullName || s.Sup3_Name === currentUser.FullName) {
+                        myTasks.push(s);
+                    } else {
+                        try {
+                            const sups = JSON.parse(s.Supervisors || "[]");
+                            if(sups.includes(currentUser.FullName)) myTasks.push(s);
+                        } catch(e){}
+                    }
                 }
             });
 
-            // นับ Badge ว่ามีงานค้างกี่อัน
             let pendingCount = 0;
             myTasks.forEach(t => {
+                let myStatus = 'Accepted'; 
+                if (t.Sup1_Name === currentUser.FullName) myStatus = t.Sup1_Status;
+                else if (t.Sup2_Name === currentUser.FullName) myStatus = t.Sup2_Status;
+                else if (t.Sup3_Name === currentUser.FullName) myStatus = t.Sup3_Status;
+
                 let evals = {}; try{ evals = JSON.parse(t.EvaluationData || "{}"); }catch(e){}
-                if(!evals[currentUser.FullName]) pendingCount++;
+                if(myStatus === 'Pending' || (myStatus === 'Accepted' && !evals[currentUser.FullName])) pendingCount++;
             });
-            if(badge) {
-                badge.textContent = pendingCount;
-                badge.classList.toggle('hidden', pendingCount === 0);
-            }
+            
+            if(badge) { badge.textContent = pendingCount; badge.classList.toggle('hidden', pendingCount === 0); }
 
             if(myTasks.length === 0) {
                 grid.innerHTML = '<div class="col-span-full py-16 text-center text-amber-600 font-bold opacity-50"><div class="text-4xl mb-2">☕</div>ไม่มีภารกิจนิเทศครับ</div>';
@@ -10922,27 +10982,95 @@ window.deleteLog = function(logId) {
             }
 
             myTasks.sort((a,b) => new Date(a.TargetDate) - new Date(b.TargetDate)).forEach(t => {
+                let myStatus = 'Accepted'; 
+                if (t.Sup1_Name === currentUser.FullName) myStatus = t.Sup1_Status;
+                else if (t.Sup2_Name === currentUser.FullName) myStatus = t.Sup2_Status;
+                else if (t.Sup3_Name === currentUser.FullName) myStatus = t.Sup3_Status;
+
+                if (myStatus === 'Rejected') return;
+
                 const dDate = new Date(t.TargetDate).toLocaleDateString('th-TH', { day:'numeric', month:'short' });
                 let evals = {}; try{ evals = JSON.parse(t.EvaluationData || "{}"); }catch(e){}
                 const isDone = !!evals[currentUser.FullName];
+                const roundBadge = typeof getSupRoundName === 'function' ? `<span class="bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded text-[9px] font-bold border border-purple-200 ml-1">${getSupRoundName(t.TargetDate)}</span>` : '';
 
-                const roundBadge = `<span class="bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded text-[9px] font-bold border border-purple-200 ml-1">${getSupRoundName(t.TargetDate)}</span>`;
+                let actionHtml = '';
+                let borderClass = 'border-amber-300';
+                let topBadge = '';
 
+                if (myStatus === 'Pending') {
+                    borderClass = 'border-rose-300 shadow-rose-100 bg-rose-50/30';
+                    topBadge = '<div class="absolute -right-8 -top-2 bg-rose-500 text-white text-[10px] font-bold py-1 px-10 transform rotate-45 shadow animate-pulse">รอตอบรับ</div>';
+                    actionHtml = `
+                        <div class="flex gap-2 w-full sm:w-auto mt-3 sm:mt-0">
+                            <button onclick="window.respondToSupRequest('${t.SupID}', 'Rejected')" class="flex-1 sm:flex-none bg-white text-gray-500 border border-gray-300 px-3 py-1.5 rounded-lg text-[11px] font-bold hover:bg-gray-100 transition-colors">❌ ปฏิเสธ</button>
+                            <button onclick="window.respondToSupRequest('${t.SupID}', 'Accepted')" class="flex-1 sm:flex-none bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-[11px] font-bold shadow hover:bg-emerald-600 transition-colors">✅ รับนิเทศ</button>
+                        </div>
+                    `;
+                } else if (isDone) {
+                    borderClass = 'border-emerald-200 opacity-80';
+                    topBadge = '<div class="absolute -right-6 -top-2 bg-emerald-500 text-white text-[10px] font-bold py-1 px-8 transform rotate-45 shadow">ประเมินแล้ว</div>';
+                    actionHtml = `<span class="text-emerald-500 font-bold text-xs">✅ เสร็จสิ้น</span>`;
+                } else {
+                    // 💡 เช็คสถานะเวลา!
+                    const timeInfo = window.getSupTimeStatus(t.TargetDate, t.Period);
+                    
+                    if (!timeInfo.canEval) {
+                        // ยังไม่ถึงเวลาเรียน ซ่อนปุ่มประเมิน
+                        actionHtml = `<span class="text-amber-600 font-bold text-[10px] bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200">${timeInfo.text}</span>`;
+                    } else {
+                        // ถึงเวลา / เลยเวลาเรียนแล้ว โชว์ปุ่มประเมิน + ข้อความ
+                        const extraAlert = timeInfo.state === 'LATE' ? `<div class="text-rose-500 text-[9px] font-bold mt-1 text-right animate-pulse">${timeInfo.text}</div>` : `<div class="text-emerald-600 text-[9px] font-bold mt-1 text-right">${timeInfo.text}</div>`;
+                        actionHtml = `
+                            <div class="flex flex-col items-end w-full sm:w-auto mt-3 sm:mt-0">
+                                <button onclick="openSupEvalModal('${t.SupID}', '${t.TeacherName}')" class="bg-amber-500 text-white px-5 py-1.5 rounded-lg text-[11px] font-bold shadow hover:bg-amber-600 transition-colors flex items-center gap-1">📝 ประเมิน</button>
+                                ${extraAlert}
+                            </div>
+                        `;
+                    }
+                }
+
+                // 💡 เพิ่ม id ให้กล่องการ์ด เพื่อใช้ทำ Effect ตอนกดปุ่ม
                 grid.innerHTML += `
-                <div class="bg-white border ${isDone ? 'border-emerald-200' : 'border-amber-300'} p-4 rounded-2xl shadow-sm relative overflow-hidden">
-                    ${isDone ? '<div class="absolute -right-6 -top-2 bg-emerald-500 text-white text-[10px] font-bold py-1 px-8 transform rotate-45 shadow">ประเมินแล้ว</div>' : ''}
-                    <div class="text-xs font-bold text-gray-500 mb-1">เป้าหมาย: <span class="text-gray-800 text-sm">${t.TeacherName}</span></div>
+                <div id="card-${t.SupID}" class="bg-white border ${borderClass} p-4 rounded-2xl shadow-sm relative overflow-hidden transition-all hover:shadow-md">
+                    ${topBadge}
+                    <div class="text-xs font-bold text-gray-500 mb-1">ผู้ขอรับการนิเทศ: <span class="text-gray-800 text-sm">${t.TeacherName}</span></div>
                     <div class="text-xs text-indigo-600 font-bold mb-3 bg-indigo-50 px-2 py-1 rounded inline-block">${t.SubjectData} (คาบ ${t.Period}) ${roundBadge}</div>
-                    <div class="flex justify-between items-center mt-2 pt-3 border-t border-gray-100">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mt-2 pt-3 border-t border-gray-100">
                         <span class="text-[10px] text-gray-400 font-bold">📅 ${dDate}</span>
-                        ${isDone 
-                          ? `<span class="text-emerald-500 font-bold text-xs">✅ เสร็จสิ้น</span>` 
-                          : `<button onclick="openSupEvalModal('${t.SupID}', '${t.TeacherName}')" class="bg-amber-500 text-white px-4 py-1.5 rounded-lg text-xs font-bold shadow hover:bg-amber-600">📝 ประเมิน</button>`}
+                        ${actionHtml}
                     </div>
                 </div>`;
             });
         };
 
+        // 🚀 ฟังก์ชันยิง API แบบมี Effect เปลี่ยนกล่องการ์ดทันที (Optimistic UI)
+        window.respondToSupRequest = async function(supId, responseStatus) {
+            const cardEl = document.getElementById(`card-${supId}`);
+            if (cardEl) {
+                // เปลี่ยนหน้าตาการ์ดเป็นตัวโหลดหมุนๆ ทันทีที่กด!
+                cardEl.innerHTML = `<div class="p-6 text-center text-indigo-500 font-bold text-sm"><div class="loader loader-indigo border-2 mb-2 inline-block"></div><br>กำลังบันทึกข้อมูลและส่งแจ้งเตือน...</div>`;
+                cardEl.className = "bg-indigo-50 border border-indigo-200 p-4 rounded-2xl shadow-sm relative overflow-hidden flex items-center justify-center";
+            }
+
+            try {
+                const payload = { action: 'respondSupervision', data: { SupID: supId, TeacherName: currentUser.FullName, Response: responseStatus } };
+                const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: "follow" });
+                const result = await res.json();
+                
+                if(result.status === 'success') {
+                    if (typeof customAlert === 'function') customAlert("✅ บันทึกสำเร็จ!", "success");
+                    await fetchAllDatabasesFromGAS(); // รีเฟรชฐานข้อมูลดึงข้อมูลใหม่
+                    if(typeof renderSupTasks === 'function') renderSupTasks(); // วาดการ์ดใหม่ (จะกลายเป็นปุ่มประเมินทันที)
+                } else {
+                    throw new Error(result.message);
+                }
+            } catch(e) {
+                if (typeof customAlert === 'function') customAlert("เกิดข้อผิดพลาด: " + e.message, "error");
+                await fetchAllDatabasesFromGAS();
+                if(typeof renderSupTasks === 'function') renderSupTasks(); // รีเซ็ตการ์ดกลับมาแบบเดิมถ้าพัง
+            }
+        };
         window.openSupEvalModal = function(supId, teacherName) {
             document.getElementById('evalSupID').value = supId;
             document.getElementById('evalTargetName').textContent = teacherName;
@@ -19557,7 +19685,124 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
 
             listContainer.innerHTML = html;
         };
+        // 🛠️ ระบบซ่อมกรรมการ (เปิดหน้าต่าง Modal)
+        window.openPatchModal = function(supId) {
+            const req = supervisionDB_Global.find(s => s.SupID === supId);
+            if(!req) return customAlert("ไม่พบข้อมูล", "error");
 
+            // ดึงข้อมูลพื้นฐานเพื่อเช็คคิว
+            const targetPeriod = req.Period;
+            const targetDateStr = req.TargetDate.split('T')[0];
+            const d = new Date(req.TargetDate);
+            const dayNames = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
+            const targetDay = dayNames[d.getDay()];
+            const reqTeacherInfo = usersDB_Global.find(u => u.FullName === req.TeacherName) || {};
+            const reqDept = reqTeacherInfo.Department;
+            const reqSq = parseInt(reqTeacherInfo.Sq) || 999;
+
+            // 💡 ด่านเช็คความว่างแบบฉบับย่อ
+            const isFree = (teacherName) => {
+                if (teacherName === req.TeacherName) return false;
+                const tt = timetableDB_Global.find(x => x.TeacherName === teacherName && x.Day === targetDay);
+                if (tt && tt[`Period${targetPeriod}`] && tt[`Period${targetPeriod}`].trim() !== '') return false;
+                const isBusy = supervisionDB_Global.some(s => s.SupID !== supId && s.TargetDate && s.TargetDate.split('T')[0] === targetDateStr && parseInt(s.Period) === parseInt(targetPeriod) && (s.Sup1_Name === teacherName || s.Sup2_Name === teacherName || s.Sup3_Name === teacherName || s.TeacherName === teacherName));
+                return !isBusy;
+            };
+
+            const validTeachers = usersDB_Global.filter(u => u.FullName !== req.TeacherName && (!u.Role.includes('BirdSpy') || u.Role.includes('User')));
+
+            // 1. กรองสายบริหาร
+            const execFreeList = validTeachers.filter(u => (String(u.Role).includes('Director') || String(u.Role).includes('DepDir') || String(u.Role).includes('AsstDir') || String(u.Role).includes('HOA') || (String(u.Role).includes('HOD') && u.Department === reqDept)) && isFree(u.FullName));
+            // 2. กรอง PLC
+            let myPLCGroup = [];
+            const effectiveGroups = typeof getEffectivePLCGroups === 'function' ? getEffectivePLCGroups() : (typeof plcGroupsDB_Global !== 'undefined' ? plcGroupsDB_Global : []);
+            for (let g of effectiveGroups) {
+                if (g.Status === 'Active' && typeof g.Members === 'string' && g.Members.includes(reqTeacherInfo.Username)) {
+                    myPLCGroup = JSON.parse(g.Members).map(uname => (usersDB_Global.find(u => u.Username === uname)?.FullName)).filter(n => n); break;
+                }
+            }
+            const plcFreeList = validTeachers.filter(u => myPLCGroup.includes(u.FullName) && isFree(u.FullName));
+            // 3. กรองรุ่นพี่
+            const seniorFreeList = validTeachers.filter(u => (parseInt(u.Sq)||999) <= reqSq && isFree(u.FullName));
+
+            // สร้าง HTML Dropdown
+            const getOpts = (list, defaultTxt) => list.length > 0 ? `<option value="">-- ${defaultTxt} --</option>` + list.map(t => `<option value="${t.FullName}">${t.FullName}</option>`).join('') : '<option value="">❌ ไม่มีใครว่างในคาบนี้</option>';
+
+            const s1HTML = req.Sup1_Status === 'Rejected' ? `<div class="mb-3"><label class="text-xs font-bold text-rose-500">👑 ผู้บริหาร/หัวหน้าหมวด (คนที่ 1)</label><select id="patchSup1" class="w-full p-2 border border-rose-300 rounded">${getOpts(execFreeList, 'เลือกคนใหม่')}</select></div>` : `<div class="mb-3 opacity-60"><label class="text-xs font-bold text-gray-500">👑 คนที่ 1</label><div class="p-2 bg-gray-100 rounded text-sm">✅ ${req.Sup1_Name} (ล็อกไว้)</div></div>`;
+            const s2HTML = req.Sup2_Status === 'Rejected' ? `<div class="mb-3"><label class="text-xs font-bold text-emerald-500">🤝 วง PLC (คนที่ 2)</label><select id="patchSup2" class="w-full p-2 border border-emerald-300 rounded">${getOpts(plcFreeList, 'เลือกคนใหม่')}</select></div>` : `<div class="mb-3 opacity-60"><label class="text-xs font-bold text-gray-500">🤝 คนที่ 2</label><div class="p-2 bg-gray-100 rounded text-sm">✅ ${req.Sup2_Name} (ล็อกไว้)</div></div>`;
+            const s3HTML = req.Sup3_Status === 'Rejected' ? `<div class="mb-3"><label class="text-xs font-bold text-indigo-500">🌟 รุ่นพี่วิทยฐานะ (คนที่ 3)</label><select id="patchSup3" class="w-full p-2 border border-indigo-300 rounded">${getOpts(seniorFreeList, 'เลือกคนใหม่')}</select></div>` : `<div class="mb-3 opacity-60"><label class="text-xs font-bold text-gray-500">🌟 คนที่ 3</label><div class="p-2 bg-gray-100 rounded text-sm">✅ ${req.Sup3_Name} (ล็อกไว้)</div></div>`;
+
+            const modalHTML = `
+            <div id="patchModal-${supId}" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
+                <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 border-t-4 border-amber-500">
+                    <h3 class="text-lg font-black text-gray-800 mb-1">🔄 เปลี่ยนกรรมการใหม่</h3>
+                    <p class="text-xs text-gray-500 mb-4">ระบบจะเปลี่ยนเฉพาะตำแหน่งที่ถูกปฏิเสธเท่านั้น</p>
+                    ${s1HTML}${s2HTML}${s3HTML}
+                    <div class="mt-6 flex justify-end gap-2">
+                        <button onclick="document.getElementById('patchModal-${supId}').remove()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-300">ยกเลิก</button>
+                        <button onclick="window.submitPatch('${supId}')" id="btnPatch-${supId}" class="px-4 py-2 bg-amber-500 text-white rounded-lg text-sm font-bold shadow hover:bg-amber-600">💾 ส่งคำเชิญใหม่</button>
+                    </div>
+                </div>
+            </div>`;
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+        };
+        // 🚀 ฟังก์ชันยิง API ลบคำขอนิเทศ (หน้าบ้าน)
+        window.deleteSupRequestUI = async function(supId) {
+            //if (!confirm("⚠️ คุณแน่ใจหรือไม่ที่จะยกเลิกคำขอนิเทศนี้?\n(หากยกเลิกแล้วข้อมูลจะหายไปถาวร)")) return;
+            
+            try {
+                if (typeof customAlert === 'function') customAlert("กำลังยกเลิกคำขอ...", "info");
+                
+                // ใช้ API ตัวเดิมที่หลังบ้านแกมีอยู่แล้ว (deleteSupervision)
+                const payload = { action: 'deleteSupervision', id: supId };
+                const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: "follow" });
+                const result = await res.json();
+                
+                if(result.status === 'success') {
+                    if (typeof customAlert === 'function') customAlert("ยกเลิกคำขอนิเทศเรียบร้อยแล้ว", "success");
+                    await fetchAllDatabasesFromGAS(); // รีเฟรชฐานข้อมูล
+                    if(typeof renderSupHistory === 'function') renderSupHistory(); // วาดตารางใหม่
+                } else {
+                    throw new Error(result.message);
+                }
+            } catch(e) {
+                if (typeof customAlert === 'function') customAlert("เกิดข้อผิดพลาด: " + e.message, "error");
+                else alert("Error: " + e.message);
+            }
+        };
+
+        // 🚀 ส่งข้อมูลคนใหม่เข้า API
+        window.submitPatch = async function(supId) {
+            const btn = document.getElementById(`btnPatch-${supId}`);
+            const s1 = document.getElementById('patchSup1')?.value || null;
+            const s2 = document.getElementById('patchSup2')?.value || null;
+            const s3 = document.getElementById('patchSup3')?.value || null;
+
+            // เช็คว่ามี Dropdown ไหนโผล่มาแล้วดันไม่ได้เลือกคนไหม
+            if ((document.getElementById('patchSup1') && !s1) || 
+                (document.getElementById('patchSup2') && !s2) || 
+                (document.getElementById('patchSup3') && !s3)) {
+                return customAlert("กรุณาเลือกกรรมการใหม่ให้ครบทุกช่องครับ", "warning");
+            }
+
+            btn.innerHTML = 'กำลังประมวลผล...'; btn.disabled = true;
+
+            try {
+                const payload = { action: 'patchSupervisors', data: { SupID: supId, Sup1_Name: s1, Sup2_Name: s2, Sup3_Name: s3 } };
+                const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: "follow" });
+                const result = await res.json();
+                
+                if(result.status === 'success') {
+                    document.getElementById(`patchModal-${supId}`).remove();
+                    customAlert(result.message, "success");
+                    await fetchAllDatabasesFromGAS();
+                    if(typeof renderSupHistory === 'function') renderSupHistory(); // อัปเดตตารางประวัติของไอซ์
+                } else throw new Error(result.message);
+            } catch(e) {
+                customAlert("Error: " + e.message, "error");
+                btn.innerHTML = '💾 ส่งคำเชิญใหม่'; btn.disabled = false;
+            }
+        };
     </script>
     <!-- 🎯 [เฟส 4] หน้าต่างประเมินการนิเทศ (Supervision Evaluation Modal) -->
     <div id="supervisionEvalModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center">
