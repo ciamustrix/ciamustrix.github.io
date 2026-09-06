@@ -11287,7 +11287,7 @@ window.deleteLog = function(logId) {
             }
         };
         // ==========================================
-        // 💾 ฟังก์ชันบันทึกการจัดกรรมการรายบุคคล (V.ฉีดเข้าเส้นเลือด)
+        // 💾 ฟังก์ชันบันทึกการจัดกรรมการรายบุคคล (V.เปลี่ยนชื่อ Action)
         // ==========================================
         window.saveSupMapping = async function(supId) {
             const sup1 = document.getElementById(`sup1_${supId}`).value;
@@ -11302,21 +11302,18 @@ window.deleteLog = function(logId) {
 
             if (sups.length === 0) return typeof customAlert === 'function' ? customAlert('กรุณาเลือกกรรมการอย่างน้อย 1 ท่านครับ', 'warning') : alert('เลือกกรรมการก่อน');
 
-            // ตามหาตัวตนเดิมในความจำของเครื่อง
             let targetRecord = supervisionDB_Global.find(s => s.SupID === supId);
             if (!targetRecord) return;
 
-            const payloadData = {
-                SupID: supId,
-                SupType: supType,
-                Sup1_Name: sup1,
-                Sup2_Name: sup2,
-                Sup3_Name: sup3,
-                Supervisors: JSON.stringify(sups),
-                Status: 'Assigned' 
-            };
+            // เอาข้อมูลเดิมมาอัปเดต
+            const payloadData = { ...targetRecord }; 
+            payloadData.SupType = supType;
+            payloadData.Sup1_Name = sup1;
+            payloadData.Sup2_Name = sup2;
+            payloadData.Sup3_Name = sup3;
+            payloadData.Supervisors = JSON.stringify(sups);
+            payloadData.Status = 'Assigned'; 
             
-            // ลอจิก: ถ้าเปลี่ยนเป็น Type B ต้องให้สถานะเป็น Pending เสมอ (รอกดรับ)
             if (supType === 'B') {
                 payloadData.Status = 'Pending';
                 payloadData.Sup1_Status = 'Pending';
@@ -11332,13 +11329,13 @@ window.deleteLog = function(logId) {
             }
 
             try {
-                // 1. ยิงข้อมูลไปอัปเดต Google Sheets
-                const payload = { action: 'updateSupMapping', data: payloadData };
+                // 💡 ไฮไลท์: เนียนใช้ Action 'saveVipHod' เพราะหลังบ้านมันเขียนว่า saveRecord(1แถว) อยู่แล้ว
+                const payload = { action: 'saveVipHod', data: payloadData };
                 const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: "follow" });
                 const result = await res.json();
 
                 if (result.status === 'success') {
-                    // 💉 2. ฉีดข้อมูลอัปเดตเข้าเส้นเลือด! แก้ค่าในเครื่องคอมทันที
+                    // 💉 ฉีดข้อมูลอัปเดตเข้าเส้นเลือด
                     targetRecord.SupType = payloadData.SupType;
                     targetRecord.Sup1_Name = payloadData.Sup1_Name;
                     targetRecord.Sup2_Name = payloadData.Sup2_Name;
@@ -11351,9 +11348,7 @@ window.deleteLog = function(logId) {
                         targetRecord.Sup3_Status = 'Pending';
                     }
 
-                    // วาดตารางใหม่ให้เนียนตา
                     if (typeof renderSupAdminMapping === 'function') renderSupAdminMapping();
-                    
                     typeof customAlert === 'function' ? customAlert('บันทึกกรรมการสำเร็จ!', 'success') : alert('บันทึกสำเร็จ');
                 } else {
                     throw new Error(result.message);
@@ -11361,10 +11356,7 @@ window.deleteLog = function(logId) {
             } catch (e) {
                 console.error("🔥 พังตอนจัดกรรมการ:", e);
                 typeof customAlert === 'function' ? customAlert('บันทึกไม่สำเร็จ: ' + e.message, 'error') : alert('Error: ' + e.message);
-                if (btn) {
-                    btn.innerHTML = origTxt;
-                    btn.disabled = false;
-                }
+                if (btn) { btn.innerHTML = origTxt; btn.disabled = false; }
             }
         };
         // ==========================================
@@ -20675,7 +20667,7 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
         // 💾 Step 3: เซฟ Draft ลูกหมวดทั้งหมด ลงฐานข้อมูล (API)
         // ==========================================
         // ==========================================
-        // 💾 ฟังก์ชันบันทึกตาราง Draft แบบ B เข้าระบบจริง (V.ฉีดเข้าเส้นเลือด)
+        // 💾 ฟังก์ชันบันทึกตาราง Draft แบบ B เข้าระบบจริง (V.เปลี่ยนชื่อ Action)
         // ==========================================
         window.saveAllTypeBDrafts = async function() {
             if (!window.tempTypeBDrafts || window.tempTypeBDrafts.length === 0) return;
@@ -20688,27 +20680,24 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
             }
 
             try {
-                // 1. ยิงข้อมูลไป Google Sheets
-                const payload = { action: 'saveMultipleSups', data: window.tempTypeBDrafts };
+                // 💡 ไฮไลท์: เปลี่ยนชื่อ Action เป็น 'saveTypeBDrafts' ให้ตรงกับ Code.gs
+                const payload = { action: 'saveTypeBDrafts', data: window.tempTypeBDrafts };
                 const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: "follow" });
                 const result = await res.json();
 
                 if (result.status === 'success') {
-                    // 💉 2. ฉีดข้อมูลเข้าเส้นเลือด (Local State Injection) 
-                    // ยัดลง supervisionDB_Global ทันที ปฏิทินจะได้เห็นเลยไม่ต้องรีเฟรช!
+                    // 💉 ฉีดข้อมูลเข้าเส้นเลือด
                     window.tempTypeBDrafts.forEach(draft => {
                         supervisionDB_Global.push(draft);
                     });
 
                     typeof customAlert === 'function' ? customAlert("✅ บันทึกตารางนิเทศแบบ B เข้าระบบสำเร็จ! (ส่งคำเชิญแล้ว)", "success") : alert("บันทึกสำเร็จ!");
                     
-                    // 3. เคลียร์กระดาน
                     window.tempTypeBDrafts = [];
                     const tbody = document.getElementById('typeBDraftTableBody');
                     if(tbody) tbody.innerHTML = '';
                     document.getElementById('typeBDraftContainer').classList.add('hidden');
                     
-                    // รีเฟรชหน้าจัดการแอดมิน (ถ้าเปิดอยู่)
                     if (typeof renderSupAdminMapping === 'function') renderSupAdminMapping();
                 } else {
                     throw new Error(result.message);
@@ -20965,7 +20954,7 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
         // 💾 Step 2: เซฟคิว HOD (VIP) ลงฐานข้อมูล (API) - V.กดยืนยัน
         // ==========================================
         // ==========================================
-        // 👑 ฟังก์ชันบันทึกคิว VIP ประธานหมวด (แก้บั๊กวันที่ & ReqDate)
+        // 👑 ฟังก์ชันบันทึกคิว VIP ประธานหมวด (V.เปลี่ยนชื่อ Action ให้ตรง Code.gs)
         // ==========================================
         window.saveVipHodSchedule = async function() {
             if (!window.currentVipHod) return;
@@ -20992,13 +20981,13 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
 
             const payloadData = {
                 SupID: "B_HOD_" + Date.now() + "_" + Math.floor(Math.random()*100),
-                ReqDate: new Date().toISOString(), // 💡 เติมให้แล้ว!
+                ReqDate: new Date().toISOString(),
                 Timestamp: new Date().toISOString(),
                 Round: currentRound,
                 Semester: "2",
                 AcademicYear: "2569",
                 TeacherName: window.currentVipHod.FullName,
-                TargetDate: targetDate, // 🛑 รับค่าตรงๆ แบบ YYYY-MM-DD จาก Input Calendar ไม่ต่อหาง
+                TargetDate: targetDate, 
                 Period: period.toString(),
                 SubjectData: subjectData,
                 SupType: 'B',
@@ -21014,12 +21003,13 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
             if (btn) { btn.innerHTML = '💾 กำลังบันทึก...'; btn.disabled = true; }
 
             try {
-                const payload = { action: 'saveMultipleSups', data: [payloadData] };
+                // 💡 ไฮไลท์: เปลี่ยนชื่อ Action เป็น 'saveVipHod' และถอดวงเล็บ [] ออก เพื่อส่งเป็น Object ก้อนเดียว!
+                const payload = { action: 'saveVipHod', data: payloadData };
                 const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: "follow" });
                 const result = await res.json();
 
                 if (result.status === 'success') {
-                    supervisionDB_Global.push(payloadData); // 💉 ฉีดเข้าเส้นเลือดปฏิทินจะได้เห็นทันที
+                    supervisionDB_Global.push(payloadData); 
                     typeof customAlert === 'function' ? customAlert('บันทึกคิว VIP สำเร็จ!', 'success') : alert('บันทึกสำเร็จ');
                     document.getElementById('vipHodCommittees').classList.add('hidden');
                     if (typeof renderSupAdminMapping === 'function') renderSupAdminMapping();
