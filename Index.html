@@ -254,8 +254,8 @@
             
             <div class="mt-8 text-center border-t border-gray-200/50 pt-4">
                 <p class="text-xs text-gray-500 font-medium mb-1">โรงเรียนวังตะเคียนวิทยาคม | ฝ่ายบริหารงานวิชาการ</p>
-                <p class="text-[10px] text-sky-700/60 font-bold tracking-wide">V 1.03.04.03 [Sep 4th, 2025 - 00:02] | TESTING-f(Sv)</p>
-                <p class="text-xs text-gray-500 font-medium mb-1">Dev. by Thuntathorn 😁</p>
+                <p class="text-[10px] text-sky-700/60 font-bold tracking-wide">V 1.03.04.09 [Sep 4th, 2025 - 04:09] | TESTING-f(Sv)</p>
+                <p class="text-xs text-gray-500 font-medium mb-1">Dev. by Thuntathorn 😁 | Dedicated to #IWreal and JLT</p>
             </div>
         </div>
     </div>
@@ -2293,7 +2293,8 @@
                                 <div id="vipHodCommittees" class="hidden grid-cols-1 md:grid-cols-3 gap-4 p-5 bg-white rounded-xl border border-amber-200 shadow-sm animate-in fade-in zoom-in duration-300">
                                     <div class="space-y-1.5">
                                         <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">👑 ประธาน (SLOT 1)</label>
-                                        <input type="text" id="vipHodSup1" readonly class="w-full text-xs font-bold text-amber-900 bg-amber-50 p-2.5 rounded-lg border border-amber-200 outline-none shadow-inner" placeholder="ดึงจากตั้งค่าอัตโนมัติ">
+                                        <!-- 💡 เปลี่ยนจาก input แข็งๆ เป็น select dropdown อัจฉริยะ -->
+                                        <select id="vipHodSup1" class="w-full text-xs font-bold text-amber-900 bg-amber-50 p-2.5 rounded-lg border border-amber-300 focus:border-amber-500 outline-none shadow-sm cursor-pointer"></select>
                                     </div>
                                     <div class="space-y-1.5">
                                         <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">📝 กรรมการ (SQ สูงกว่า)</label>
@@ -2310,7 +2311,7 @@
                                     </div>
                                 </div>
                             </div>
-<!-- 🚀 Step 3 -->
+                            <!-- 🚀 Step 3 -->
                             <div class="mb-8 bg-indigo-50/50 p-5 sm:p-6 rounded-2xl border border-indigo-100 shadow-sm">
                                 <h4 class="text-sm font-black text-indigo-800 mb-4 flex items-center gap-2">
                                     <span class="bg-indigo-200 p-1.5 rounded-lg shadow-sm">🚀</span> ขั้นตอนที่ 3: ให้ AI สร้างตารางลูกหมวดอัตโนมัติ
@@ -2385,6 +2386,7 @@
                             </div>
                         </div>
                     </div>
+                </div>
                 <!-- ========================================== -->
                 <!-- VIEW 7: จัดการระบบ (Imperial Admin Dashboard) -->
                 <!-- ========================================== -->
@@ -10566,13 +10568,12 @@ window.deleteLog = function(logId) {
             });
         };
 
-        // 🎯 Tab 3: แผงควบคุมจัดกรรมการ (Admin/HOA) - V.7 (Round Management + Stats + Lock)
+        // 🎯 Tab 3: แผงควบคุมจัดกรรมการ (Admin/HOA) - V.8 (Super Optimized - ลื่นปรื๊ดแก้จอดำ)
         window.renderSupAdminMapping = function() {
             const tbody = document.getElementById('supAdminTableBody');
             if(!tbody) return;
 
-            // 1. 🗂️ ดึงข้อมูลรอบทั้งหมดที่มี เพื่อสร้าง Dropdown
-            // (ใช้ getSupRoundName ที่แกมีอยู่แล้วในการดึงชื่อรอบ)
+            // 1. 🗂️ ดึงข้อมูลรอบทั้งหมดที่มี
             const allRounds = [...new Set(supervisionDB_Global.map(s => typeof getSupRoundName === 'function' ? getSupRoundName(s.TargetDate) : "รอบปัจจุบัน"))];
             
             const filterSelect = document.getElementById('roundFilterSelect');
@@ -10582,14 +10583,13 @@ window.deleteLog = function(logId) {
                 allRounds.forEach(r => {
                     if(r) filterSelect.innerHTML += `<option value="${r}">${r}</option>`;
                 });
-                // ตั้งค่าเริ่มต้นให้เป็นรอบล่าสุด (สมมติว่าเป็นอันสุดท้ายใน array)
                 if (allRounds.length > 0 && currentVal === "ALL") filterSelect.value = allRounds[allRounds.length - 1]; 
                 else if(currentVal) filterSelect.value = currentVal;
             }
 
             const selectedRound = filterSelect ? filterSelect.value : 'ALL';
 
-            // 2. 🔍 กรองข้อมูลตามรอบที่เลือก (เอาเฉพาะสถานะที่ต้องจัด)
+            // 2. 🔍 กรองข้อมูลตามรอบที่เลือก
             let filteredSups = supervisionDB_Global.filter(s => {
                 const sRound = typeof getSupRoundName === 'function' ? getSupRoundName(s.TargetDate) : "รอบปัจจุบัน";
                 const matchRound = (selectedRound === 'ALL' || sRound === selectedRound);
@@ -10597,34 +10597,26 @@ window.deleteLog = function(logId) {
                 return matchRound && matchStatus;
             });
 
-            // 3. 📊 คำนวณสถิติ (Mini Progress Bar)
+            // 3. 📊 คำนวณสถิติ
             if (document.getElementById('roundStatsContainer')) {
-                const totalInRound = supervisionDB_Global.filter(s => 
-                    (selectedRound === 'ALL' || (typeof getSupRoundName === 'function' ? getSupRoundName(s.TargetDate) : "รอบปัจจุบัน") === selectedRound)
-                ).length;
-                
-                const completedInRound = supervisionDB_Global.filter(s => 
-                    (selectedRound === 'ALL' || (typeof getSupRoundName === 'function' ? getSupRoundName(s.TargetDate) : "รอบปัจจุบัน") === selectedRound) &&
-                    (s.Status === 'Completed' || s.Status === 'Evaluated')
-                ).length;
-
+                const totalInRound = supervisionDB_Global.filter(s => (selectedRound === 'ALL' || (typeof getSupRoundName === 'function' ? getSupRoundName(s.TargetDate) : "รอบปัจจุบัน") === selectedRound)).length;
+                const completedInRound = supervisionDB_Global.filter(s => (selectedRound === 'ALL' || (typeof getSupRoundName === 'function' ? getSupRoundName(s.TargetDate) : "รอบปัจจุบัน") === selectedRound) && (s.Status === 'Completed' || s.Status === 'Evaluated')).length;
                 const pendingCount = filteredSups.length;
 
                 document.getElementById('roundStatsContainer').innerHTML = `
                     <div class="bg-white px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm"><span class="text-gray-500">ทั้งหมด:</span> <span class="text-indigo-600 font-black">${totalInRound}</span></div>
                     <div class="bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 shadow-sm"><span class="text-emerald-600">ประเมินเสร็จแล้ว:</span> <span class="text-emerald-700 font-black">${completedInRound}</span></div>
-                    <div class="bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200 shadow-sm"><span class="text-amber-600">รายการรอจัด/รอนิเทศ:</span> <span class="text-amber-700 font-black animate-pulse">${pendingCount}</span></div>
+                    <div class="bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200 shadow-sm"><span class="text-amber-600">รายการรอจัด:</span> <span class="text-amber-700 font-black animate-pulse">${pendingCount}</span></div>
                 `;
             }
 
-            tbody.innerHTML = '';
-            
             if (filteredSups.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="4" class="py-10 text-center text-gray-400 italic font-bold">-- ไม่มีรายการรอจัดกรรมการในรอบที่เลือก --</td></tr>`;
                 return;
             }
 
-            let teacherOpts = '<option value="">-- ว่าง --</option>';
+            // 🏗️ สร้าง Template ชื่อครูทั้งหมดไว้ล่วงหน้า
+            let teacherOptsBase = '<option value="">-- ว่าง --</option>';
             const validTeachers = usersDB_Global.filter(u => !u.Role.includes('BirdSpy') || u.Role.includes('User'));
             validTeachers.sort((a,b) => {
                 const iA = (typeof LEARNING_AREAS !== 'undefined' && LEARNING_AREAS.indexOf(a.Department) !== -1) ? LEARNING_AREAS.indexOf(a.Department) : 99;
@@ -10634,19 +10626,22 @@ window.deleteLog = function(logId) {
             });
             validTeachers.forEach(u => {
                 const deptStr = u.Department ? `[${u.Department.substring(0,3)}] ` : '';
-                teacherOpts += `<option value="${u.FullName}">${deptStr}${u.FullName}</option>`;
+                teacherOptsBase += `<option value="${u.FullName}">${deptStr}${u.FullName}</option>`;
             });
 
-            // 🔒 4. ลอจิก Lock Past Rounds: ถ้ารอบที่เลือก ไม่ใช่ "รอบที่เปิดใช้งานอยู่" จะสั่งปิดปุ่มแก้ไขทั้งหมด!
+            // 🔒 4. ลอจิก Lock Past Rounds
             const activeRoundStr = masterSwitches_Global?.SupervisionMaster?.settings?.activeRoundName || ""; 
-            // หมายเหตุ: แกต้องแก้ activeRoundStr นี้ให้ตรงกับตัวแปรที่เก็บชื่อรอบปัจจุบันของแกนะ
             const isLocked = (selectedRound !== 'ALL' && activeRoundStr !== "" && selectedRound !== activeRoundStr);
+            const disableHtml = isLocked ? "disabled" : "";
+            const selectStyle = isLocked ? "bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200" : "bg-white focus:border-rose-500 focus:ring-1 focus:ring-rose-500 border-gray-300";
+
+            // 💡 พระเอกขี่ม้าขาว: สร้าง String Buffer แบกไว้ในอากาศก่อน
+            let htmlBuffer = '';
 
             filteredSups.forEach(s => {
                 const dDate = new Date(s.TargetDate).toLocaleDateString('th-TH', { day:'numeric', month:'short' });
                 const roundName = typeof getSupRoundName === 'function' ? getSupRoundName(s.TargetDate) : "รอบปัจจุบัน";
                 
-                // 🏷️ ป้าย Type A / Type B
                 const typeBadge = (s.SupType === 'B') 
                     ? `<span class="bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded text-[9px] font-black border border-rose-200 inline-block mr-1">TYPE B (บังคับ)</span>`
                     : `<span class="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[9px] font-black border border-blue-200 inline-block mr-1">TYPE A (ปกติ)</span>`;
@@ -10658,10 +10653,22 @@ window.deleteLog = function(logId) {
                     postponedAlert = `<div class="mt-1"><span class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded text-[10px] font-bold animate-pulse border border-amber-300">⚠️ เลื่อน (ครูลางาน)</span></div>`;
                 }
 
-                const disableHtml = isLocked ? "disabled" : "";
-                const selectStyle = isLocked ? "bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200" : "bg-white focus:border-rose-500 focus:ring-1 focus:ring-rose-500 border-gray-300";
+                // สกัดชื่อกรรมการ
+                let sups = []; 
+                try { sups = JSON.parse(s.Supervisors || "[]"); } catch(e){}
 
-                tbody.innerHTML += `
+                // ฟังก์ชันลูกเพื่อสร้าง Dropdown และยัด selected อัตโนมัติ (ลบ setTimeout ทิ้ง)
+                const getSelectHtml = (index) => {
+                    let selectedName = sups[index] || "";
+                    let opts = teacherOptsBase;
+                    if (selectedName) {
+                        opts = opts.replace(`value="${selectedName}"`, `value="${selectedName}" selected`);
+                    }
+                    return `<select id="sup${index+1}_${s.SupID}" ${disableHtml} class="w-full text-[10px] p-1.5 border rounded-lg outline-none ${selectStyle}">${opts}</select>`;
+                };
+
+                // วาดสะสมลง Buffer
+                htmlBuffer += `
                 <tr class="hover:bg-gray-50 border-b border-gray-100 ${isLocked ? 'opacity-60' : ''}">
                     <td class="px-4 py-3">
                         <div class="mb-1">${typeBadge}</div>
@@ -10672,9 +10679,9 @@ window.deleteLog = function(logId) {
                     </td>
                     <td class="px-4 py-3 text-xs font-bold text-indigo-700">${s.SubjectData} <br><span class="text-gray-500 font-normal">คาบ ${s.Period}</span></td>
                     <td class="px-4 py-3 space-y-1">
-                        <select id="sup1_${s.SupID}" ${disableHtml} class="w-full text-[10px] p-1.5 border rounded-lg outline-none ${selectStyle}">${teacherOpts}</select>
-                        <select id="sup2_${s.SupID}" ${disableHtml} class="w-full text-[10px] p-1.5 border rounded-lg outline-none ${selectStyle}">${teacherOpts}</select>
-                        <select id="sup3_${s.SupID}" ${disableHtml} class="w-full text-[10px] p-1.5 border rounded-lg outline-none ${selectStyle}">${teacherOpts}</select>
+                        ${getSelectHtml(0)}
+                        ${getSelectHtml(1)}
+                        ${getSelectHtml(2)}
                     </td>
                     <td class="px-4 py-3 text-center align-middle space-y-1.5">
                         <select id="supType_${s.SupID}" ${disableHtml} class="w-full text-[10px] p-1.5 border border-indigo-300 rounded-lg outline-none bg-indigo-50 text-indigo-800 font-bold focus:border-indigo-500 shadow-sm ${isLocked ? 'hidden' : ''}">
@@ -10689,14 +10696,10 @@ window.deleteLog = function(logId) {
                         }
                     </td>
                 </tr>`;
-                
-                setTimeout(() => {
-                    let sups = []; try { sups = JSON.parse(s.Supervisors || "[]"); } catch(e){}
-                    if(sups[0]) document.getElementById(`sup1_${s.SupID}`).value = sups[0];
-                    if(sups[1]) document.getElementById(`sup2_${s.SupID}`).value = sups[1];
-                    if(sups[2]) document.getElementById(`sup3_${s.SupID}`).value = sups[2];
-                }, 50);
             });
+
+            // 💡 ทุบลงหน้าจอทีเดียวจบ!
+            tbody.innerHTML = htmlBuffer;
         };
         // 🤖 สมองกลจัดกรรมการ (รันทันทีที่ครูเลือกคาบ) - V.Titanium Fix (บังคับรองฯ เบอร์ 1)
         window.assignedCommitteeCache = []; // เก็บความจำกรรมการไว้ส่งขึ้น DB
@@ -11117,90 +11120,87 @@ window.deleteLog = function(logId) {
                 customAlert(`⚠️ ระบบหาคนได้เพียง ${cleanTeam.length} ท่าน กรุณาเลือกเพิ่มเติมในช่องที่ว่างแล้วกดบันทึกครับ`, "warning");
             }
         };
+        // ==========================================
+        // 💾 ฟังก์ชันบันทึกการจัดกรรมการรายบุคคล (V.ฉีดเข้าเส้นเลือด)
+        // ==========================================
         window.saveSupMapping = async function(supId) {
-            const s1 = document.getElementById(`sup1_${supId}`).value;
-            const s2 = document.getElementById(`sup2_${supId}`).value;
-            const s3 = document.getElementById(`sup3_${supId}`).value;
+            const sup1 = document.getElementById(`sup1_${supId}`).value;
+            const sup2 = document.getElementById(`sup2_${supId}`).value;
+            const sup3 = document.getElementById(`sup3_${supId}`).value;
+            const supType = document.getElementById(`supType_${supId}`).value;
+
+            let sups = [];
+            if (sup1) sups.push(sup1);
+            if (sup2) sups.push(sup2);
+            if (sup3) sups.push(sup3);
+
+            if (sups.length === 0) return typeof customAlert === 'function' ? customAlert('กรุณาเลือกกรรมการอย่างน้อย 1 ท่านครับ', 'warning') : alert('เลือกกรรมการก่อน');
+
+            // ตามหาตัวตนเดิมในความจำของเครื่อง
+            let targetRecord = supervisionDB_Global.find(s => s.SupID === supId);
+            if (!targetRecord) return;
+
+            const payloadData = {
+                SupID: supId,
+                SupType: supType,
+                Sup1_Name: sup1,
+                Sup2_Name: sup2,
+                Sup3_Name: sup3,
+                Supervisors: JSON.stringify(sups),
+                Status: 'Assigned' 
+            };
             
-            const selectedSups = [s1, s2, s3].filter(s => s !== "");
-            if(selectedSups.length === 0) return customAlert("กรุณาเลือกกรรมการอย่างน้อย 1 คนครับ");
-            // 💡 --- เริ่มด่านตรวจจับคิวชน (Clash Detection) ---
-            const req = supervisionDB_Global.find(s => s.SupID === supId);
-            if (!req) return customAlert("ไม่พบข้อมูลคำขอนิเทศ", "error");
-
-            const targetDateStr = req.TargetDate.split('T')[0];
-            const targetPeriod = parseInt(req.Period);
-            const d = new Date(req.TargetDate);
-            const dayNames = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
-            const targetDay = dayNames[d.getDay()];
-
-            let clashedTeacher = null;
-            let clashReason = "";
-
-            for (let tName of selectedSups) {
-                // กฎ 1: เช็คตารางสอนปกติ
-                const tt = timetableDB_Global.find(x => x.TeacherName === tName && x.Day === targetDay);
-                if (tt && tt[`Period${targetPeriod}`] && tt[`Period${targetPeriod}`].trim() !== '') {
-                    clashedTeacher = tName; clashReason = "มีสอนคาบปกติ"; break;
-                }
-
-                // กฎ 2: เช็คคิวไปนิเทศคนอื่น (หรือกำลังรับการนิเทศเอง)
-                const isBusySupervising = supervisionDB_Global.some(s => {
-                    if (s.SupID === supId) return false; // ข้ามรายการของตัวเอง
-                    if (s.TargetDate && s.TargetDate.split('T')[0] === targetDateStr && parseInt(s.Period) === targetPeriod) {
-                        let sups = []; try { sups = JSON.parse(s.Supervisors || "[]"); } catch(e){}
-                        return sups.includes(tName) || s.TeacherName === tName;
-                    }
-                    return false;
-                });
-                if (isBusySupervising) { clashedTeacher = tName; clashReason = "ติดคิวนิเทศห้องอื่นแล้ว"; break; }
-
-                // กฎ 3: เช็คคิว SLC Open Class (เป็น Model หรือ Buddy)
-                const isBusySLC = slcSessionsDB_Global.some(slc => {
-                    if (slc.Date && slc.Date.split('T')[0] === targetDateStr && parseInt(slc.Period) === targetPeriod) {
-                        let buddies = []; try { buddies = JSON.parse(slc.BuddyTeachers || "[]"); } catch(e){}
-                        return slc.ModelTeacher === tName || buddies.includes(tName);
-                    }
-                    return false;
-                });
-                if (isBusySLC) { clashedTeacher = tName; clashReason = "ติดภารกิจ SLC Open Class"; break; }
-
-                // กฎ 4: เช็คการละเว้น (Advanced Exclusions) ที่แอดมินตั้งไว้
-                if (typeof persistentExclusions !== 'undefined') {
-                    if (Array.isArray(persistentExclusions) && persistentExclusions.includes(tName)) {
-                        clashedTeacher = tName; clashReason = "ถูกตั้งค่าละเว้นถาวร"; break;
-                    } else if (!Array.isArray(persistentExclusions) && typeof persistentExclusions === 'object') {
-                        const tExc = persistentExclusions[tName];
-                        if (tExc && tExc[targetDay] && tExc[targetDay].includes(targetPeriod)) {
-                            clashedTeacher = tName; clashReason = "ถูกตั้งค่าละเว้นในคาบนี้"; break;
-                        }
-                    }
-                }
+            // ลอจิก: ถ้าเปลี่ยนเป็น Type B ต้องให้สถานะเป็น Pending เสมอ (รอกดรับ)
+            if (supType === 'B') {
+                payloadData.Status = 'Pending';
+                payloadData.Sup1_Status = 'Pending';
+                payloadData.Sup2_Status = 'Pending';
+                payloadData.Sup3_Status = 'Pending';
             }
 
-            // ถ้าเจอคนชน ให้บล็อกการเซฟทันที!
-            if (clashedTeacher) {
-                return customAlert(`❌ จัดกรรมการไม่ได้! อาจารย์ "${clashedTeacher}" ไม่ว่างในคาบนี้ (${clashReason}) กรุณาเปลี่ยนคนครับ`, "error");
+            const btn = document.querySelector(`button[onclick="saveSupMapping('${supId}')"]`);
+            const origTxt = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.innerHTML = '💾...';
+                btn.disabled = true;
             }
-            // 💡 --- จบด่านตรวจจับคิวชน ---
 
             try {
-                const payload = { action: 'assignSupervision', data: { SupID: supId, Supervisors: selectedSups } };
+                // 1. ยิงข้อมูลไปอัปเดต Google Sheets
+                const payload = { action: 'updateSupMapping', data: payloadData };
                 const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: "follow" });
                 const result = await res.json();
-                if(result.status === 'success') {
-                    customAlert(result.message, "success");
-                    // Update Local
-                    const idx = supervisionDB_Global.findIndex(x => x.SupID === supId);
-                    if(idx > -1) {
-                        supervisionDB_Global[idx].Supervisors = JSON.stringify(selectedSups);
-                        supervisionDB_Global[idx].Status = 'Assigned';
-                    }
-                    renderSupAdminMapping();
-                }
-            } catch(e) { customAlert("Error: " + e.message); }
-        };
 
+                if (result.status === 'success') {
+                    // 💉 2. ฉีดข้อมูลอัปเดตเข้าเส้นเลือด! แก้ค่าในเครื่องคอมทันที
+                    targetRecord.SupType = payloadData.SupType;
+                    targetRecord.Sup1_Name = payloadData.Sup1_Name;
+                    targetRecord.Sup2_Name = payloadData.Sup2_Name;
+                    targetRecord.Sup3_Name = payloadData.Sup3_Name;
+                    targetRecord.Supervisors = payloadData.Supervisors;
+                    targetRecord.Status = payloadData.Status;
+                    if(supType === 'B') {
+                        targetRecord.Sup1_Status = 'Pending';
+                        targetRecord.Sup2_Status = 'Pending';
+                        targetRecord.Sup3_Status = 'Pending';
+                    }
+
+                    // วาดตารางใหม่ให้เนียนตา
+                    if (typeof renderSupAdminMapping === 'function') renderSupAdminMapping();
+                    
+                    typeof customAlert === 'function' ? customAlert('บันทึกกรรมการสำเร็จ!', 'success') : alert('บันทึกสำเร็จ');
+                } else {
+                    throw new Error(result.message);
+                }
+            } catch (e) {
+                console.error("🔥 พังตอนจัดกรรมการ:", e);
+                typeof customAlert === 'function' ? customAlert('บันทึกไม่สำเร็จ: ' + e.message, 'error') : alert('Error: ' + e.message);
+                if (btn) {
+                    btn.innerHTML = origTxt;
+                    btn.disabled = false;
+                }
+            }
+        };
         // ==========================================
         // ⚙️ ฟังก์ชันตั้งค่าประธานนิเทศแบบ B (V.ดึงจากฐานข้อมูล 100% ของแทร่!)
         // ==========================================
@@ -19934,10 +19934,13 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
         let currentCalMonth = new Date().getMonth();
         let currentCalYear = new Date().getFullYear();
 
+        // ==========================================
+        // 📅 1. ฟังก์ชันวาดปฏิทินนิเทศ (ปลดล็อกโชว์คิว Pending)
+        // ==========================================
         window.renderSupCalendar = function(month = currentCalMonth, year = currentCalYear) {
             currentCalMonth = month; currentCalYear = year;
             
-            const gridContainer = document.getElementById('supCalendarGrid'); // เปลี่ยน ID เป็นแบบ Grid
+            const gridContainer = document.getElementById('supCalendarGrid'); 
             const monthLabel = document.getElementById('supCalendarMonthLabel');
             if(!gridContainer || !monthLabel) return;
 
@@ -19945,16 +19948,15 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
             monthLabel.textContent = `${monthsTh[month]} ${year + 543}`; 
 
             const daysInMonth = new Date(year, month + 1, 0).getDate();
-            const firstDayOfWeek = new Date(year, month, 1).getDay(); // หาวันแรกของเดือนว่าตรงกับวันอะไร
+            const firstDayOfWeek = new Date(year, month, 1).getDay(); 
             const today = new Date();
 
-            // จัดกลุ่มข้อมูลตามวันที่
             const eventsByDate = {};
             if (typeof supervisionDB_Global !== 'undefined') {
                 supervisionDB_Global.forEach(s => {
-                    if(s.Status === 'Assigned' || s.Status === 'Evaluated') {
+                    // 💡 ไฮไลท์ 1: ปลดล็อกให้ดึงสถานะ Pending มาโชว์ได้แล้ว!
+                    if(s.Status === 'Assigned' || s.Status === 'Evaluated' || s.Status === 'Pending') {
                         if(!s.TargetDate) return;
-                        // แปลงเป็น Local Time เสมอ เพื่อกันเพี้ยน
                         const d = new Date(s.TargetDate);
                         if(d.getMonth() === month && d.getFullYear() === year) {
                             const day = d.getDate();
@@ -19968,25 +19970,24 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
 
             let html = '';
 
-            // 1. วาดกล่องเปล่าเพื่อเว้นช่องให้ตรงกับวันแรกของเดือน
             for(let i=0; i<firstDayOfWeek; i++) {
                 html += `<div class="aspect-square rounded-xl bg-gray-50/50 border border-gray-100 opacity-50"></div>`;
             }
 
-            // 2. วาดกล่องวันที่
             for(let day=1; day<=daysInMonth; day++) {
                 const isToday = today.getDate() === day && today.getMonth() === month && today.getFullYear() === year;
                 const dayEvents = eventsByDate[day] || [];
                 
                 let isReceiving = false;
                 let isEvaluating = false;
+                let hasPending = false; // 💡 เพิ่มตัวแปรเช็คสถานะ Pending
                 
                 dayEvents.forEach(e => {
                     if (e.TeacherName === currentUser.FullName) isReceiving = true;
                     if (e.parsedSups.includes(currentUser.FullName)) isEvaluating = true;
+                    if (e.Status === 'Pending') hasPending = true;
                 });
 
-                // ตรรกะแยกสี
                 let bgClass = "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"; 
                 let badgeHtml = "";
 
@@ -19997,17 +19998,19 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
                     } else if (isEvaluating) {
                         bgClass = "bg-amber-50 border-amber-400 text-amber-800 shadow-md shadow-amber-500/20";
                         badgeHtml = `<div class="w-full flex justify-center mt-1"><div class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-amber-500 animate-pulse"></div></div>`;
+                    } else if (hasPending) {
+                        // 💡 ไฮไลท์ 2: ถ้าเป็นคิว Pending ให้โชว์ไข่ปลาสีเทากระพริบ
+                        bgClass = "bg-slate-50 border-slate-300 text-slate-700 shadow-sm"; 
+                        badgeHtml = `<div class="w-full flex justify-center mt-1"><div class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-slate-400 animate-pulse"></div></div>`;
                     } else {
                         bgClass = "bg-gray-100 border-gray-300 text-gray-700 shadow-sm"; 
                         badgeHtml = `<div class="w-full flex justify-center mt-1"><div class="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-gray-400"></div></div>`;
                     }
                 }
 
-                // สไตล์พิเศษสำหรับ "วันนี้"
                 const todayRing = isToday ? 'ring-2 ring-rose-500 ring-offset-1 font-black text-rose-600' : '';
                 const dateStrForClick = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
 
-                // 💡 บีบกล่องปฏิทินให้กะทัดรัดขึ้น (ใช้ rounded-lg และ text-sm)
                 html += `
                 <div onclick="showSupAgendaForDate('${dateStrForClick}')" class="aspect-square rounded-lg border flex flex-col items-center justify-center cursor-pointer transition-all transform hover:scale-105 active:scale-95 ${bgClass} ${todayRing}">
                     <span class="text-sm font-bold">${day}</span>
@@ -20017,7 +20020,6 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
 
             gridContainer.innerHTML = html;
             
-            // ออโต้คลิกวันนี้
             if (month === today.getMonth() && year === today.getFullYear()) {
                 setTimeout(() => {
                     const todayDateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
@@ -20035,23 +20037,23 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
             else if(currentCalMonth < 0) { currentCalMonth = 11; currentCalYear--; }
             renderSupCalendar(currentCalMonth, currentCalYear);
         };
-        // 💡 ฟังก์ชันวาด List กำหนดการเมื่อคลิกวันที่บนปฏิทิน
+        // ==========================================
+        // 📋 2. ฟังก์ชันวาด List กำหนดการเมื่อคลิกวันที่ (เพิ่มแถบสถานะ รอตอบรับ)
+        // ==========================================
         window.showSupAgendaForDate = function(dateStr) {
             const listContainer = document.getElementById('supDailyAgendaList');
             const titleLabel = document.getElementById('agendaDateTitle');
             
-            // แปลงวันที่เป็นภาษาไทยโชว์บนหัว
             const d = new Date(dateStr);
             const dayNames = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
             const monthNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
             titleLabel.innerHTML = `<span>🗓️</span> กำหนดการ: วัน${dayNames[d.getDay()]}ที่ ${d.getDate()} ${monthNames[d.getMonth()]} พ.ศ. ${d.getFullYear()+543}`;
 
-            // 💡 แก้บั๊กวันที่เคลื่อน (Timezone Bug)
             const dayEvents = supervisionDB_Global.filter(s => {
-                if(s.Status !== 'Assigned' && s.Status !== 'Evaluated') return false;
+                // 💡 ไฮไลท์ 3: อนุญาตให้แสดงผลคิวที่ Pending ได้
+                if(s.Status !== 'Assigned' && s.Status !== 'Evaluated' && s.Status !== 'Pending') return false;
                 if(!s.TargetDate) return false;
                 
-                // แปลง TargetDate ที่ติด Timezone ให้เป็น Local Date ก่อนเทียบ
                 const dbD = new Date(s.TargetDate);
                 if (isNaN(dbD.getTime())) return false;
                 const dbDateStr = `${dbD.getFullYear()}-${String(dbD.getMonth()+1).padStart(2,'0')}-${String(dbD.getDate()).padStart(2,'0')}`;
@@ -20068,7 +20070,6 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
                 return;
             }
 
-            // จัดเรียงตามคาบเรียน (น้อยไปมาก)
             dayEvents.sort((a, b) => parseInt(a.Period) - parseInt(b.Period));
 
             let html = '';
@@ -20078,7 +20079,6 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
                 const isReceiving = e.TeacherName === currentUser.FullName;
                 const isEvaluating = sups.includes(currentUser.FullName);
 
-                // ลอจิกสีแบบชัดเจน
                 let cardClass = "bg-white border-gray-200 hover:border-gray-300";
                 let badgeHtml = "";
                 let iconHtml = "📋";
@@ -20091,14 +20091,23 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
                     cardClass = "bg-amber-50 border-amber-300 shadow-md shadow-amber-500/10";
                     badgeHtml = `<span class="bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded shadow-sm animate-pulse">🕵️ ภารกิจของคุณ (กรรมการ)</span>`;
                     iconHtml = "👁️";
+                } else if (e.Status === 'Pending') {
+                    // 💡 สไตล์พิเศษสำหรับคิวที่ยังไม่มีใครกดรับ (ดูโปร่งๆ หน่อย)
+                    cardClass = "bg-slate-50 border-slate-300 border-dashed opacity-80 hover:opacity-100";
+                    iconHtml = "👀";
                 }
 
-                // หั่นคำนำหน้าให้สั้นลง
                 const stripPrefix = (name) => String(name).replace(/^(นาย|นางสาว|นาง|ว่าที่ร้อยตรีหญิง|ว่าที่ร้อยตรี|ว่าที่ ร\.ต\. หญิง|ว่าที่ ร\.ต\.|Mr\.|Mrs\.|Ms\.)\s*/gi, '').trim();
 
-                const statusTag = e.Status === 'Evaluated' 
-                    ? `<span class="text-[10px] font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200">✅ ประเมินแล้ว</span>` 
-                    : `<span class="text-[10px] font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded border border-amber-200">⏳ รอประเมิน</span>`;
+                // 💡 ป้ายสถานะแบบใหม่ รองรับ 3 สถานะ
+                let statusTag = '';
+                if (e.Status === 'Evaluated') {
+                    statusTag = `<span class="text-[10px] font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200">✅ ประเมินแล้ว</span>`;
+                } else if (e.Status === 'Pending') {
+                    statusTag = `<span class="text-[10px] font-bold text-slate-600 bg-slate-200 px-2 py-0.5 rounded border border-slate-300 animate-pulse">👀 รอการตอบรับ</span>`;
+                } else {
+                    statusTag = `<span class="text-[10px] font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded border border-amber-200">⏳ รอประเมิน</span>`;
+                }
 
                 html += `
                 <div class="p-4 rounded-2xl border transition-all relative overflow-hidden flex flex-col sm:flex-row gap-4 sm:items-center ${cardClass}">
@@ -20115,7 +20124,7 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
                        <p class="text-sm font-bold text-indigo-700 mb-2">
                             ${e.SubjectData} 
                             <span class="bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded text-[9px] font-bold border border-purple-200 ml-2 align-middle">
-                                ${getSupRoundName(e.TargetDate)}
+                                ${typeof getSupRoundName === 'function' ? getSupRoundName(e.TargetDate) : 'รอบปัจจุบัน'}
                             </span>
                         </p>
                         <div class="text-xs text-gray-600 bg-white/60 p-2 rounded-lg border border-gray-100 flex items-start gap-2">
@@ -20499,38 +20508,50 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
         // ==========================================
         // 💾 Step 3: เซฟ Draft ลูกหมวดทั้งหมด ลงฐานข้อมูล (API)
         // ==========================================
+        // ==========================================
+        // 💾 ฟังก์ชันบันทึกตาราง Draft แบบ B เข้าระบบจริง (V.ฉีดเข้าเส้นเลือด)
+        // ==========================================
         window.saveAllTypeBDrafts = async function() {
-            if (window.tempTypeBDrafts.length === 0) return;
-            const btn = window.event.currentTarget;
-            const origTxt = btn.innerHTML;
-            btn.innerHTML = '<div class="loader loader-white mr-2 border-2 inline-block"></div> กำลังยิงเข้า Database...'; 
-            btn.disabled = true;
+            if (!window.tempTypeBDrafts || window.tempTypeBDrafts.length === 0) return;
+
+            const btn = document.querySelector('button[onclick="saveAllTypeBDrafts()"]');
+            const origTxt = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.innerHTML = '<div class="loader loader-white mr-2 border-2 inline-block w-4 h-4 align-middle"></div> กำลังบันทึก...';
+                btn.disabled = true;
+            }
 
             try {
-                // อัปเดต Timestamp
-                window.tempTypeBDrafts.forEach(d => { d.Timestamp = new Date().toISOString(); });
-
-                // ยิง API แบบกลุ่ม
-                const payload = { action: 'saveTypeBDrafts', data: window.tempTypeBDrafts };
+                // 1. ยิงข้อมูลไป Google Sheets
+                const payload = { action: 'saveMultipleSups', data: window.tempTypeBDrafts };
                 const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: "follow" });
                 const result = await res.json();
 
                 if (result.status === 'success') {
-                    window.tempTypeBDrafts.forEach(d => supervisionDB_Global.push(d));
-                    if (typeof renderSupAdminMapping === 'function') renderSupAdminMapping();
+                    // 💉 2. ฉีดข้อมูลเข้าเส้นเลือด (Local State Injection) 
+                    // ยัดลง supervisionDB_Global ทันที ปฏิทินจะได้เห็นเลยไม่ต้องรีเฟรช!
+                    window.tempTypeBDrafts.forEach(draft => {
+                        supervisionDB_Global.push(draft);
+                    });
+
+                    typeof customAlert === 'function' ? customAlert("✅ บันทึกตารางนิเทศแบบ B เข้าระบบสำเร็จ! (ส่งคำเชิญแล้ว)", "success") : alert("บันทึกสำเร็จ!");
                     
-                    typeof customAlert === 'function' ? customAlert("✅ ดันข้อมูลลูกหมวดทั้งหมดลง Google Sheets สำเร็จ!", "success") : alert("บันทึกสำเร็จ!");
-                    document.getElementById('typeBDraftContainer').classList.add('hidden');
+                    // 3. เคลียร์กระดาน
                     window.tempTypeBDrafts = [];
+                    const tbody = document.getElementById('typeBDraftTableBody');
+                    if(tbody) tbody.innerHTML = '';
+                    document.getElementById('typeBDraftContainer').classList.add('hidden');
+                    
+                    // รีเฟรชหน้าจัดการแอดมิน (ถ้าเปิดอยู่)
+                    if (typeof renderSupAdminMapping === 'function') renderSupAdminMapping();
                 } else {
                     throw new Error(result.message);
                 }
-            } catch(error) {
-                console.error("🔥 พังตอนเซฟลูกหมวด:", error);
-                typeof customAlert === 'function' ? customAlert("เซิร์ฟเวอร์ขัดข้อง: " + error.message, "error") : alert("ขัดข้อง: " + error.message);
+            } catch (error) {
+                console.error("🔥 พังตอนเซฟ Draft Type B:", error);
+                typeof customAlert === 'function' ? customAlert("เซิร์ฟเวอร์ขัดข้องตอนบันทึก: " + error.message, "error") : alert("ขัดข้อง: " + error.message);
             } finally {
-                btn.innerHTML = origTxt; 
-                btn.disabled = false;
+                if (btn) { btn.innerHTML = origTxt; btn.disabled = false; }
             }
         };
         // ==========================================
@@ -20620,22 +20641,37 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
             committeeBox.classList.add('hidden'); // ซ่อนกรรมการไว้ก่อน รอเลือกคาบ
         };
         // ==========================================
-        // 👑 สมองกล Step 2: เลือกกรรมการ VIP HOD
+        // 👑 สมองกลตรวจเช็คคาบว่าง VIP (V.Dropdown ประธานครอบจักรวาล)
         // ==========================================
         window.checkHodVipFreeSlots = function() {
-            const dept = document.getElementById('vipHodDept').value;
+            if (!window.currentVipHod) return;
             const dateVal = document.getElementById('vipHodDate').value;
             const periodVal = document.getElementById('vipHodPeriod').value;
-            const committeeBox = document.getElementById('vipHodCommittees');
-            
-            if (!window.currentVipHod || !dateVal || !periodVal) {
-                committeeBox.classList.add('hidden');
+            const dept = document.getElementById('vipHodDept').value;
+            const committeeDiv = document.getElementById('vipHodCommittees');
+
+            if (!dateVal || !periodVal) {
+                committeeDiv.classList.add('hidden');
                 return;
             }
 
+            const dateStr = new Date(dateVal).toISOString().split('T')[0];
             const checkDate = new Date(dateVal);
-            const dateStr = checkDate.toISOString().split('T')[0];
             const dayName = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"][checkDate.getDay()];
+
+            // 1. หาประธานหลัก
+            const savedChairs = JSON.parse(localStorage.getItem('typeB_chairs') || "{}");
+            const teamLeader = savedChairs[dept] || "";
+
+            // 2. ดึงรายชื่อทีมบริหารทั้งหมด + ตัวเอง (หัวหน้างานนิเทศ)
+            let allExecs = usersDB_Global.filter(u => {
+                const r = u.Role || "";
+                return r.includes('DepDir') || r.includes('HOA') || r.includes('AsstDir') || r.includes('Director') || r.includes('EmpPngn') || u.FullName === currentUser.FullName;
+            });
+            allExecs = Array.from(new Map(allExecs.map(item => [item.FullName, item])).values());
+
+            const deptTeachers = usersDB_Global.filter(u => u.Department === dept && (!u.Role.includes('BirdSpy') || u.Role.includes('User')));
+            const reqSq = parseInt(window.currentVipHod.Sq) || 999;
 
             const isFree = (tName) => {
                 if(!tName) return false;
@@ -20645,92 +20681,100 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
                 return !busySup;
             };
 
-            // 1. ดึงประธาน
-            const savedChairs = JSON.parse(localStorage.getItem('typeB_chairs') || "{}");
-            const teamLeader = savedChairs[dept];
-            if (!teamLeader) return typeof customAlert === 'function' ? customAlert("ต้องไปตั้งค่าประธานนิเทศก่อนครับ!", "error") : alert("ต้องตั้งค่าประธานก่อน!");
-            
-            document.getElementById('vipHodSup1').value = teamLeader;
-            committeeBox.classList.remove('hidden');
-            committeeBox.classList.add('grid');
-
-            const hodSq = parseInt(window.currentVipHod.Sq) || 999;
-
-            // 📝 2. ลอจิก Slot 2 (Sq สูงกว่า สาระเดียวกัน -> สาระอื่น)
-            let sqSameDept = usersDB_Global.filter(u => u.Department === dept && u.FullName !== window.currentVipHod.FullName && u.FullName !== teamLeader && (parseInt(u.Sq) || 999) < hodSq && isFree(u.FullName));
-            let sqDiffDept = usersDB_Global.filter(u => u.Department !== dept && u.FullName !== window.currentVipHod.FullName && u.FullName !== teamLeader && (parseInt(u.Sq) || 999) < hodSq && isFree(u.FullName));
-            
-            let sup2Html = '<option value="">-- เลือกด้วยตนเอง (ว่าง) --</option>';
-            if (sqSameDept.length > 0) {
-                sup2Html += '<optgroup label="✅ Sq สูงกว่า (กลุ่มสาระเดียวกัน)">';
-                sqSameDept.forEach(u => sup2Html += `<option value="${u.FullName}">${u.FullName}</option>`);
-                sup2Html += '</optgroup>';
+            // 👑 วาด SLOT 1 (ประธาน/ตัวสำรอง) อัจฉริยะ!
+            let sup1Html = '';
+            let defaultChair = teamLeader;
+            if (!isFree(teamLeader)) {
+                 defaultChair = allExecs.find(u => u.FullName !== window.currentVipHod.FullName && isFree(u.FullName))?.FullName || "";
             }
-            if (sqDiffDept.length > 0) {
-                sup2Html += '<optgroup label="🌐 Sq สูงกว่า (ต่างกลุ่มสาระ)">';
-                sqDiffDept.forEach(u => sup2Html += `<option value="${u.FullName}">${u.FullName} [${u.Department.substring(0,3)}]</option>`);
-                sup2Html += '</optgroup>';
+
+            if (defaultChair === teamLeader && teamLeader !== "") {
+                sup1Html += `<optgroup label="👑 ประธานหลัก (สถานะ: ว่าง)"><option value="${teamLeader}" selected>${teamLeader}</option></optgroup>`;
+            } else if (teamLeader !== "") {
+                sup1Html += `<optgroup label="⚠️ ประธานหลักติดภารกิจ"><option value="${teamLeader}" disabled>${teamLeader} (ติดสอน/ภารกิจ)</option></optgroup>`;
+                if (defaultChair) sup1Html += `<optgroup label="🔄 ตัวสำรอง (AI เลือกให้)"><option value="${defaultChair}" selected>${defaultChair}</option></optgroup>`;
+            }
+            
+            const freeExecs = allExecs.filter(u => u.FullName !== teamLeader && u.FullName !== defaultChair && u.FullName !== window.currentVipHod.FullName && isFree(u.FullName));
+            if (freeExecs.length > 0) {
+                sup1Html += `<optgroup label="🟢 เปลี่ยนประธาน/ผู้บริหารท่านอื่น">`;
+                freeExecs.forEach(u => { 
+                    let roleTag = (u.FullName === currentUser.FullName) ? " (หัวหน้างานนิเทศ)" : "";
+                    sup1Html += `<option value="${u.FullName}">${u.FullName}${roleTag}</option>`; 
+                });
+                sup1Html += `</optgroup>`;
+            }
+            document.getElementById('vipHodSup1').innerHTML = sup1Html || '<option value="">-- ไม่มีผู้บริหารว่าง --</option>';
+
+            // 📝 วาด SLOT 2
+            let sup2Html = `<option value="">-- ว่าง (เลือกเอง) --</option>`;
+            let sqHigherSame = deptTeachers.filter(u => u.FullName !== window.currentVipHod.FullName && u.FullName !== teamLeader && (parseInt(u.Sq)||999) < reqSq && isFree(u.FullName));
+            if (sqHigherSame.length > 0) {
+                sup2Html += `<optgroup label="✅ Sq สูงกว่าหัวหน้าหมวด">`;
+                sqHigherSame.forEach(u => { sup2Html += `<option value="${u.FullName}">${u.FullName}</option>`; });
+                sup2Html += `</optgroup>`;
+            }
+            const othersSameDept = deptTeachers.filter(u => u.FullName !== window.currentVipHod.FullName && u.FullName !== teamLeader && !sqHigherSame.some(sq => sq.FullName === u.FullName) && isFree(u.FullName));
+            if (othersSameDept.length > 0) {
+                 sup2Html += `<optgroup label="👥 ครูในหมวดที่ว่าง">`;
+                 othersSameDept.forEach(u => { sup2Html += `<option value="${u.FullName}">${u.FullName}</option>`; });
+                 sup2Html += `</optgroup>`;
             }
             document.getElementById('vipHodSup2').innerHTML = sup2Html;
-            // Auto-select ถ้ามีคนสาระเดียวกัน
-            if (sqSameDept.length > 0) document.getElementById('vipHodSup2').value = sqSameDept[0].FullName;
+            if(sqHigherSame.length > 0) document.getElementById('vipHodSup2').value = sqHigherSame[0].FullName;
 
-            // 🤝 3. ลอจิก Slot 3 (PLC) - สแกนทุกรูขุมขนแบบ 100%
-            let plcMembers = [];
+            // 📝 วาด SLOT 3
+            let sup3Html = `<option value="">-- ว่าง (เลือกเอง) --</option>`;
+            
+            let plcM = [];
             if (typeof plcGroupsDB_Global !== 'undefined') {
-                const hodValues = Object.values(window.currentVipHod); // กวาดทุกข้อมูลของ HOD
-                
-                const hodPlcGroup = plcGroupsDB_Global.find(plc => {
-                    if (!plc.Members) return false;
-                    try {
-                        const membersArray = JSON.parse(plc.Members);
-                        return membersArray.some(mId => hodValues.includes(mId)); 
-                    } catch(e) { return false; }
-                });
-
-                if (hodPlcGroup) {
-                    try {
-                        const mIds = JSON.parse(hodPlcGroup.Members);
-                        plcMembers = usersDB_Global.filter(u => {
-                            const uValues = Object.values(u); // กวาดทุกข้อมูลของครูคนอื่นมาเทียบ
-                            return mIds.some(mId => uValues.includes(mId)) && 
-                                   u.FullName !== window.currentVipHod.FullName && 
-                                   u.FullName !== teamLeader && 
-                                   isFree(u.FullName);
-                        });
-                    } catch(e) { console.error("พังตอนแปลง JSON Members", e); }
+                const tObj = usersDB_Global.find(u=>u.FullName === window.currentVipHod.FullName);
+                if(tObj) {
+                    const tVals = Object.values(tObj);
+                    const tPlc = plcGroupsDB_Global.find(plc => {
+                        if(!plc.Members) return false;
+                        try { return JSON.parse(plc.Members).some(mId => tVals.includes(mId)); } catch(e){return false;}
+                    });
+                    if(tPlc) {
+                        try {
+                            const mIds = JSON.parse(tPlc.Members);
+                            plcM = usersDB_Global.filter(u => { const uVals = Object.values(u); return mIds.some(mId => uVals.includes(mId)) && u.FullName !== window.currentVipHod.FullName && u.FullName !== teamLeader && isFree(u.FullName); });
+                        } catch(e){}
+                    }
                 }
             }
 
-            let sup3Html = '<option value="">-- เลือกด้วยตนเอง (ว่าง) --</option>';
+            let sqDiff = usersDB_Global.filter(u => u.Department !== dept && u.FullName !== window.currentVipHod.FullName && u.FullName !== teamLeader && (parseInt(u.Sq)||999) < reqSq && isFree(u.FullName));
             
-            // เรียงลำดับ Dropdown: Sq สาระเดียวกัน -> PLC -> Sq ต่างสาระ
-            if (sqSameDept.length > 0) {
-                sup3Html += '<optgroup label="✅ Sq สูงกว่า (กลุ่มสาระเดียวกัน)">';
-                sqSameDept.forEach(u => sup3Html += `<option value="${u.FullName}">${u.FullName}</option>`);
-                sup3Html += '</optgroup>';
+            if (plcM.length > 0) {
+                sup3Html += `<optgroup label="🤝 กลุ่ม PLC เดียวกัน">`;
+                plcM.forEach(u => { sup3Html += `<option value="${u.FullName}">${u.FullName}</option>`; });
+                sup3Html += `</optgroup>`;
             }
-            if (plcMembers.length > 0) {
-                sup3Html += '<optgroup label="🤝 กลุ่ม PLC เดียวกัน">';
-                plcMembers.forEach(u => sup3Html += `<option value="${u.FullName}">${u.FullName} [${u.Department ? u.Department.substring(0,3) : ''}]</option>`);
-                sup3Html += '</optgroup>';
+            if (sqHigherSame.length > 0) {
+                sup3Html += `<optgroup label="✅ Sq สูงกว่า (สาระเดียวกัน)">`;
+                sqHigherSame.forEach(u => { sup3Html += `<option value="${u.FullName}">${u.FullName}</option>`; });
+                sup3Html += `</optgroup>`;
             }
-            if (sqDiffDept.length > 0) {
-                sup3Html += '<optgroup label="🌐 Sq สูงกว่า (ต่างกลุ่มสาระ)">';
-                sqDiffDept.forEach(u => sup3Html += `<option value="${u.FullName}">${u.FullName} [${u.Department.substring(0,3)}]</option>`);
-                sup3Html += '</optgroup>';
+            if (sqDiff.length > 0) {
+                sup3Html += `<optgroup label="🌐 Sq สูงกว่า (ต่างสาระ)">`;
+                sqDiff.forEach(u => { sup3Html += `<option value="${u.FullName}">${u.FullName} [${u.Department.substring(0,3)}]</option>`; });
+                sup3Html += `</optgroup>`;
             }
-            
+
             document.getElementById('vipHodSup3').innerHTML = sup3Html;
             
-            // Auto-select ลำดับความสำคัญ: 1. PLC -> 2. Sq สาระเดียวกัน(คนที่ 2) -> 3. Sq ต่างสาระ
-            if (plcMembers.length > 0) {
-                document.getElementById('vipHodSup3').value = plcMembers[0].FullName;
-            } else if (sqSameDept.length > 1) { 
-                document.getElementById('vipHodSup3').value = sqSameDept[1].FullName;
-            } else if (sqDiffDept.length > 0) {
-                document.getElementById('vipHodSup3').value = sqDiffDept[0].FullName;
+            // Auto Select หลบกันเองของ SLOT 3
+            const autoSup2 = document.getElementById('vipHodSup2').value;
+            if (plcM.length > 0 && plcM[0].FullName !== autoSup2) {
+                document.getElementById('vipHodSup3').value = plcM[0].FullName;
+            } else if(sqHigherSame.length > 1) {
+                document.getElementById('vipHodSup3').value = sqHigherSame.find(u => u.FullName !== autoSup2)?.FullName || "";
+            } else if (sqDiff.length > 0) {
+                document.getElementById('vipHodSup3').value = sqDiff[0].FullName;
             }
+
+            committeeDiv.classList.remove('hidden');
         };
         // ==========================================
         // 💾 Step 1: เซฟประธานนิเทศ ลงฐานข้อมูล (API)
@@ -20754,82 +20798,71 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
         // ==========================================
         // 💾 Step 2: เซฟคิว HOD (VIP) ลงฐานข้อมูล (API) - V.กดยืนยัน
         // ==========================================
+        // ==========================================
+        // 👑 ฟังก์ชันบันทึกคิว VIP ประธานหมวด (แก้บั๊กวันที่ & ReqDate)
+        // ==========================================
         window.saveVipHodSchedule = async function() {
+            if (!window.currentVipHod) return;
+            const dept = document.getElementById('vipHodDept').value;
+            const targetDate = document.getElementById('vipHodDate').value;
+            const period = document.getElementById('vipHodPeriod').value;
+            const sup1 = document.getElementById('vipHodSup1').value;
+            const sup2 = document.getElementById('vipHodSup2').value;
+            const sup3 = document.getElementById('vipHodSup3').value;
+
+            if (!targetDate || !period || !sup1) {
+                return typeof customAlert === 'function' ? customAlert('กรุณากรอกข้อมูลให้ครบถ้วน', 'warning') : alert('กรอกข้อมูลไม่ครบ');
+            }
+
+            const tt = timetableDB_Global.find(x => x.TeacherName === window.currentVipHod.FullName && x.Day === ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"][new Date(targetDate).getDay()]);
+            const subjectData = tt ? tt[`Period${period}`] : "ไม่ระบุวิชา";
+
+            let sups = [sup1];
+            if (sup2) sups.push(sup2);
+            if (sup3) sups.push(sup3);
+
+            let currentRound = document.getElementById('roundFilterSelect') ? document.getElementById('roundFilterSelect').value : 'รอบที่ 1';
+            if (currentRound === 'ALL') currentRound = 'รอบที่ 1';
+
+            const payloadData = {
+                SupID: "B_HOD_" + Date.now() + "_" + Math.floor(Math.random()*100),
+                ReqDate: new Date().toISOString(), // 💡 เติมให้แล้ว!
+                Timestamp: new Date().toISOString(),
+                Round: currentRound,
+                Semester: "2",
+                AcademicYear: "2569",
+                TeacherName: window.currentVipHod.FullName,
+                TargetDate: targetDate, // 🛑 รับค่าตรงๆ แบบ YYYY-MM-DD จาก Input Calendar ไม่ต่อหาง
+                Period: period.toString(),
+                SubjectData: subjectData,
+                SupType: 'B',
+                Status: 'Pending',               
+                Sup1_Name: sup1, Sup1_Status: 'Pending', 
+                Sup2_Name: sup2 || '', Sup2_Status: 'Pending', 
+                Sup3_Name: sup3 || '', Sup3_Status: 'Pending', 
+                Supervisors: JSON.stringify(sups)
+            };
+
+            const btn = document.getElementById('btnSaveVipHod');
+            const origTxt = btn ? btn.innerHTML : '';
+            if (btn) { btn.innerHTML = '💾 กำลังบันทึก...'; btn.disabled = true; }
+
             try {
-                if (!window.currentVipHod) return typeof customAlert === 'function' ? customAlert("กรุณาระบุหัวหน้าหมวดก่อน!", "warning") : alert("กรุณาระบุหัวหน้าหมวดก่อน!");
-
-                const dateVal = document.getElementById('vipHodDate').value;
-                const periodVal = document.getElementById('vipHodPeriod').value;
-                const s1 = document.getElementById('vipHodSup1').value;
-                const s2 = document.getElementById('vipHodSup2').value;
-                const s3 = document.getElementById('vipHodSup3').value;
-
-                if (!dateVal || !periodVal) return typeof customAlert === 'function' ? customAlert("กรุณาเลือกวันที่และคาบสอนให้ครบ!", "warning") : alert("เลือกวันที่และคาบให้ครบ!");
-                if (!s2 || !s3) return typeof customAlert === 'function' ? customAlert("กรุณาเลือกกรรมการให้ครบทั้ง 3 ท่านครับ!", "warning") : alert("เลือกกรรมการให้ครบ!");
-
-                const checkDate = new Date(dateVal);
-                const dateStr = checkDate.toISOString().split('T')[0];
-                const dayName = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"][checkDate.getDay()];
-                
-                let subject = "ไม่ระบุวิชา";
-                if (typeof timetableDB_Global !== 'undefined') {
-                    const tt = timetableDB_Global.find(x => x.TeacherName === window.currentVipHod.FullName && x.Day === dayName);
-                    if (tt && tt[`Period${periodVal}`]) subject = tt[`Period${periodVal}`];
-                }
-
-                let currentRound = document.getElementById('roundFilterSelect') ? document.getElementById('roundFilterSelect').value : 'รอบที่ 1';
-                if (currentRound === 'ALL') currentRound = 'รอบที่ 1';
-
-                // 📦 แพ็คพัสดุ: เปลี่ยน Status เป็น Pending และฝัง Sup_Status
-                const finalRecord = {
-                    SupID: "B_HOD_" + Date.now() + "_" + Math.floor(Math.random()*100),
-                    Timestamp: new Date().toISOString(),
-                    Round: currentRound,
-                    Semester: "2",
-                    AcademicYear: "2569",
-                    TeacherName: window.currentVipHod.FullName,
-                    TargetDate: dateStr + "T00:00:00.000Z",
-                    Period: periodVal.toString(),
-                    SubjectData: subject,
-                    SupType: 'B',
-                    Status: 'Pending',               // 💡 เปลี่ยนตรงนี้
-                    Sup1_Name: s1, Sup1_Status: 'Pending', // 💡 เพิ่มตรงนี้
-                    Sup2_Name: s2, Sup2_Status: 'Pending', // 💡 เพิ่มตรงนี้
-                    Sup3_Name: s3, Sup3_Status: 'Pending', // 💡 เพิ่มตรงนี้
-                    Supervisors: JSON.stringify([s1, s2, s3])
-                };
-
-                const btn = document.getElementById('btnSaveVipHod');
-                const origTxt = btn.innerHTML;
-                btn.innerHTML = '<div class="loader loader-white mr-2 border-2 inline-block"></div> กำลังยิงเข้า Database...'; 
-                btn.disabled = true;
-
-                const payload = { action: 'saveVipHod', data: finalRecord };
+                const payload = { action: 'saveMultipleSups', data: [payloadData] };
                 const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: "follow" });
                 const result = await res.json();
 
                 if (result.status === 'success') {
-                    supervisionDB_Global.push(finalRecord);
-                    if (typeof renderSupAdminMapping === 'function') renderSupAdminMapping();
-                    
-                    typeof customAlert === 'function' ? customAlert("✅ ส่งคำเชิญกรรมการให้หัวหน้าหมวดสำเร็จ! (รอตอบรับ)", "success") : alert("บันทึกสำเร็จ!");
-                    loadHodVipData(); 
-                    document.getElementById('vipHodDate').value = "";
-                    document.getElementById('vipHodDateDisplay').value = "";
-                    document.getElementById('vipHodPeriod').innerHTML = '<option value="">-- กรุณาเลือกวันที่ก่อน --</option>';
-                    document.getElementById('vipHodPeriod').disabled = true;
+                    supervisionDB_Global.push(payloadData); // 💉 ฉีดเข้าเส้นเลือดปฏิทินจะได้เห็นทันที
+                    typeof customAlert === 'function' ? customAlert('บันทึกคิว VIP สำเร็จ!', 'success') : alert('บันทึกสำเร็จ');
                     document.getElementById('vipHodCommittees').classList.add('hidden');
-                } else {
-                    throw new Error(result.message);
-                }
-                
-                btn.innerHTML = origTxt; btn.disabled = false;
-
-            } catch (error) {
-                console.error("🔥 พังตอนเซฟ HOD:", error);
-                typeof customAlert === 'function' ? customAlert("เซิร์ฟเวอร์ขัดข้อง: " + error.message, "error") : alert("ขัดข้อง: " + error.message);
-                const btn = document.getElementById('btnSaveVipHod');
-                if(btn) { btn.innerHTML = '💾 ล็อกคิวและบันทึกกรรมการให้หัวหน้าหมวด (ลงระบบจริง)'; btn.disabled = false; }
+                    if (typeof renderSupAdminMapping === 'function') renderSupAdminMapping();
+                } else throw new Error(result.message);
+            } catch (e) {
+                console.error(e);
+                typeof customAlert === 'function' ? customAlert('บันทึกไม่สำเร็จ: ' + e.message, 'error') : alert('Error: ' + e.message);
+            } finally {
+                if (btn) { btn.innerHTML = origTxt; btn.disabled = false; }
             }
         };
         // ==========================================
@@ -20929,35 +20962,109 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
         };
 
         // ==========================================
-        // 📌 ระบบล็อกคาบ Manual Override (วาดหน้าจอ)
+        // 📌 ระบบล็อกคาบ Smart Override (สแกนตารางจริง + ไฟจราจร)
         // ==========================================
         window.toggleManualLockPanel = function() {
             const panel = document.getElementById('manualLockPanel');
             const dept = document.getElementById('genDept').value;
-            if (!dept) return typeof customAlert === 'function' ? customAlert('กรุณาเลือกกลุ่มสาระที่ช่องด้านบนก่อนครับ!', 'warning') : alert('เลือกกลุ่มสาระก่อน');
+            const startDateVal = document.getElementById('genStartDate').value;
+            const endDateVal = document.getElementById('genEndDate').value;
+            const excludeDaysInput = document.getElementById('genExcludeDates').value;
+
+            if (!dept || !startDateVal || !endDateVal) return typeof customAlert === 'function' ? customAlert('กรุณาเลือกวันเริ่มต้น สิ้นสุด และกลุ่มสาระก่อนครับ!', 'warning') : alert('กรอกข้อมูลวันเริ่ม/สิ้นสุดให้ครบก่อนเปิดใช้โหมดนี้');
 
             if (panel.classList.contains('hidden')) {
+                const sDate = new Date(startDateVal);
+                const eDate = new Date(endDateVal);
+                const excludeDays = excludeDaysInput ? excludeDaysInput.split(',').map(d => parseInt(d.trim())) : [];
+                
                 const deptTeachers = usersDB_Global.filter(u => u.Department === dept && (!u.Role.includes('BirdSpy') || u.Role.includes('User')) && !u.Role.includes('HOD'));
+                const hod = usersDB_Global.find(u => u.Department === dept && u.Role.includes('HOD'));
+                
+                const savedChairs = JSON.parse(localStorage.getItem('typeB_chairs') || "{}");
+                const teamLeader = savedChairs[dept] || "";
+
+                let allExecs = usersDB_Global.filter(u => {
+                    const r = u.Role || "";
+                    return r.includes('DepDir') || r.includes('HOA') || r.includes('AsstDir') || r.includes('Director') || r.includes('EmpPngn') || u.FullName === currentUser.FullName;
+                });
+                allExecs = Array.from(new Map(allExecs.map(item => [item.FullName, item])).values());
+
+                // ฟังก์ชันแอบเช็คคิวล่วงหน้าเพื่อทำไฟจราจร
+                const isFreeForPreCheck = (tName, checkDateStr, period, dayName) => {
+                    if(!tName) return false;
+                    const tt = timetableDB_Global.find(x => x.TeacherName === tName && x.Day === dayName);
+                    if (tt && tt[`Period${period}`] && tt[`Period${period}`].trim() !== '') return false;
+                    const busySup = supervisionDB_Global.some(s => s.TargetDate.split('T')[0] === checkDateStr && parseInt(s.Period) === parseInt(period) && (s.TeacherName === tName || (s.Supervisors && s.Supervisors.includes(tName))));
+                    return !busySup;
+                };
+
                 let html = '';
                 deptTeachers.forEach(t => {
-                    const safeId = t.FullName.replace(/\s+/g, '_'); // แปลงเว้นวรรคให้เป็น _ จะได้ไม่มีปัญหาตอนดึง ID
+                    const safeId = t.FullName.replace(/\s+/g, '_');
+                    const tt = timetableDB_Global.filter(x => x.TeacherName === t.FullName);
+                    
+                    let optionsHtml = '<option value="">- สุ่มคาบว่างให้ AI จัดการ -</option>';
+                    
+                    for (let d = new Date(sDate); d <= eDate; d.setDate(d.getDate() + 1)) {
+                        if (d.getDay() === 0 || d.getDay() === 6) continue;
+                        if (excludeDays.includes(d.getDate())) continue;
+                        
+                        const dateStr = d.toISOString().split('T')[0];
+                        const shortDate = d.toLocaleDateString('th-TH', { day:'numeric', month:'short' });
+                        const dayName = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"][d.getDay()];
+                        
+                        const dayTt = tt.find(x => x.Day === dayName);
+                        if(!dayTt) continue;
+
+                        for (let p = 1; p <= 9; p++) {
+                            const subject = dayTt[`Period${p}`];
+                            if (subject && subject.trim() !== '') {
+                                
+                                let finalChair = teamLeader;
+                                let chairStatus = "🟢"; 
+                                
+                                if (!isFreeForPreCheck(teamLeader, dateStr, p, dayName)) {
+                                    finalChair = allExecs.find(u => u.FullName !== t.FullName && isFreeForPreCheck(u.FullName, dateStr, p, dayName))?.FullName;
+                                    chairStatus = "🟡"; // ประธานหลักไม่ว่าง ต้องใช้สำรอง
+                                }
+                                
+                                let requiredSups = [];
+                                if (finalChair) requiredSups.push(finalChair);
+
+                                let backupPool = deptTeachers.filter(u => u.FullName !== t.FullName && u.FullName !== finalChair).sort((a,b) => (parseInt(a.Sq)||999) - (parseInt(b.Sq)||999));
+                                if (hod && hod.FullName !== t.FullName && isFreeForPreCheck(hod.FullName, dateStr, p, dayName)) {
+                                    requiredSups.push(hod.FullName);
+                                    backupPool = backupPool.filter(u => u.FullName !== hod.FullName);
+                                }
+                                for (let b of backupPool) {
+                                    if (requiredSups.length >= 3) break;
+                                    if (isFreeForPreCheck(b.FullName, dateStr, p, dayName)) requiredSups.push(b.FullName);
+                                }
+
+                                let finalStatus = (requiredSups.length === 3) ? chairStatus : "🔴";
+                                let statusText = (finalStatus === "🟢") ? "[ว่าง]" : (finalStatus === "🟡") ? "[ประธานติดภารกิจ]" : "[❌ คนไม่พอ]";
+                                
+                                // ตัดชื่อวิชาให้สั้นลง
+                                let shortSubj = subject.split(' ')[0] + " " + (subject.split(' ')[1] || "");
+
+                                // 📦 ส่งค่า วันที่|คาบ ซ่อนไว้ใน value
+                                optionsHtml += `<option value="${dateStr}|${p}">${finalStatus} ${statusText} ${shortDate} | คาบ ${p} | ${shortSubj}</option>`;
+                            }
+                        }
+                    }
+
                     html += `
-                    <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="py-3 pr-2 font-bold text-gray-700 w-2/5 whitespace-nowrap">${t.FullName}</td>
-                        <td class="py-3 px-1 w-1/3">
-                            <input type="date" id="lockDate_${safeId}" class="w-full text-[10px] p-2 border border-gray-300 rounded-lg outline-none focus:border-indigo-500 shadow-sm" title="ล็อกวันที่">
-                        </td>
-                        <td class="py-3 pl-1 w-1/4">
-                            <select id="lockPeriod_${safeId}" class="w-full text-[10px] p-2 border border-gray-300 rounded-lg outline-none focus:border-indigo-500 font-bold text-indigo-700 bg-indigo-50/30 shadow-sm">
-                                <option value="">- AI สุ่มคาบ -</option>
-                                <option value="1">คาบ 1</option><option value="2">คาบ 2</option><option value="3">คาบ 3</option>
-                                <option value="4">คาบ 4</option><option value="5">คาบ 5</option><option value="6">คาบ 6</option>
-                                <option value="7">คาบ 7</option><option value="8">คาบ 8</option><option value="9">คาบ 9</option>
+                    <tr class="hover:bg-indigo-50/50 transition-colors border-b border-gray-100 last:border-0">
+                        <td class="py-3 pr-2 font-bold text-gray-700 w-1/3 whitespace-nowrap text-[11px]">${t.FullName}</td>
+                        <td class="py-3 pl-1 w-2/3">
+                            <select id="smartLock_${safeId}" class="w-full text-[10px] p-2.5 border border-indigo-200 rounded-lg outline-none focus:border-indigo-500 font-bold text-indigo-900 bg-white shadow-sm cursor-pointer">
+                                ${optionsHtml}
                             </select>
                         </td>
                     </tr>`;
                 });
-                document.getElementById('manualLockTable').innerHTML = html || '<tr><td class="text-center py-4 text-gray-400 font-bold italic">ไม่พบรายชื่อลูกหมวด</td></tr>';
+                document.getElementById('manualLockTable').innerHTML = html || '<tr><td class="text-center py-4 text-gray-400 font-bold italic">ไม่พบรายชื่อครูที่มีตารางสอนในช่วงนี้</td></tr>';
                 panel.classList.remove('hidden');
             } else {
                 panel.classList.add('hidden');
@@ -20965,7 +21072,182 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
         };
 
         // ==========================================
-        // 🚀 3. สมองกล Step 3: AI จัดคิวลูกหมวด (V.Dropdown ประธานครอบจักรวาล)
+        // 🚀 3. สมองกล Step 3: AI จัดคิวลูกหมวด (V.Smart Slot Lock)
+        // ==========================================
+        // ==========================================
+        // 🔄 1. ระบบผู้ช่วย: อัปเดตและคำนวณกรรมการใหม่แบบ Real-time
+        // ==========================================
+        window.updateDraftSup = function(draftId, slotIndex, newVal) {
+            let draft = window.tempTypeBDrafts.find(d => d.SupID === draftId);
+            if(draft) {
+                if(slotIndex === 1) draft.Sup1_Name = newVal;
+                if(slotIndex === 2) draft.Sup2_Name = newVal;
+                if(slotIndex === 3) draft.Sup3_Name = newVal;
+                
+                let sups = [];
+                if(draft.Sup1_Name) sups.push(draft.Sup1_Name);
+                if(draft.Sup2_Name) sups.push(draft.Sup2_Name);
+                if(draft.Sup3_Name) sups.push(draft.Sup3_Name);
+                draft.Supervisors = JSON.stringify(sups);
+            }
+        };
+
+        // ==========================================
+        // 🔄 1. ระบบผู้ช่วย: อัปเดตและคำนวณกรรมการใหม่แบบ Real-time (แก้บั๊กวันที่)
+        // ==========================================
+        window.updateDraftSlot = function(supId, selectValue) {
+            let draft = window.tempTypeBDrafts.find(d => d.SupID === supId);
+            if(draft) {
+                const parts = selectValue.split('|');
+                draft.TargetDate = parts[0]; // 🛑 ลบหาง T00:00:00.000Z ทิ้ง! เอาแค่ YYYY-MM-DD พอ
+                draft.Period = parts[1];
+                draft.SubjectData = parts.slice(2).join('|'); 
+                
+                window.renderDraftRowSupervisors(supId);
+                
+                const toast = document.createElement('div');
+                toast.className = "fixed bottom-5 right-5 bg-emerald-600 text-white px-4 py-2 rounded-lg shadow-xl text-xs font-bold animate-in slide-in-from-bottom-5 duration-300 z-[9999]";
+                toast.innerHTML = "✨ อัปเดตคาบเรียบร้อย AI จัดกรรมการใหม่ให้แล้ว!";
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 2500);
+            }
+        };
+
+        window.renderDraftRowSupervisors = function(supId) {
+            const d = window.tempTypeBDrafts.find(draft => draft.SupID === supId);
+            if(!d) return;
+
+            const dept = document.getElementById('genDept').value;
+            const savedChairs = JSON.parse(localStorage.getItem('typeB_chairs') || "{}");
+            const teamLeader = savedChairs[dept] || "";
+
+            let allExecs = usersDB_Global.filter(u => {
+                const r = u.Role || "";
+                return r.includes('DepDir') || r.includes('HOA') || r.includes('AsstDir') || r.includes('Director') || r.includes('EmpPngn') || (typeof currentUser !== 'undefined' && u.FullName === currentUser.FullName);
+            });
+            allExecs = Array.from(new Map(allExecs.map(item => [item.FullName, item])).values());
+
+            const deptTeachers = usersDB_Global.filter(u => u.Department === dept && (!u.Role.includes('BirdSpy') || u.Role.includes('User')));
+            const hod = deptTeachers.find(u => u.Role.includes('HOD'));
+
+            const dateStr = d.TargetDate.split('T')[0];
+            const checkDate = new Date(d.TargetDate);
+            const dayName = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"][checkDate.getDay()];
+
+            // สมองกลเช็คความว่าง
+            const isFreeForDD = (tName) => {
+                if(!tName) return false;
+                const tt = timetableDB_Global.find(x => x.TeacherName === tName && x.Day === dayName);
+                if (tt && tt[`Period${d.Period}`] && tt[`Period${d.Period}`].trim() !== '') return false;
+                const busySup = supervisionDB_Global.some(s => s.TargetDate.split('T')[0] === dateStr && parseInt(s.Period) === parseInt(d.Period) && (s.TeacherName === tName || (s.Supervisors && s.Supervisors.includes(tName))));
+                if (busySup) return false;
+                const busyDraft = window.tempTypeBDrafts.some(draft => draft.SupID !== d.SupID && draft.TargetDate.split('T')[0] === dateStr && parseInt(draft.Period) === parseInt(d.Period) && (draft.TeacherName === tName || draft.Supervisors.includes(tName)));
+                return !busyDraft;
+            };
+
+            const hodSq = hod ? (parseInt(hod.Sq)||999) : 999;
+            const reqSq = parseInt(usersDB_Global.find(u=>u.FullName === d.TeacherName)?.Sq) || 999;
+
+            // 🤖 AI เปลี่ยนตัวคนที่ไม่ว่างออก แล้วเอาคนที่ว่างเสียบแทน!
+            if (!isFreeForDD(d.Sup1_Name) && d.Sup1_Name !== teamLeader) {
+                d.Sup1_Name = allExecs.find(u => u.FullName !== d.TeacherName && isFreeForDD(u.FullName))?.FullName || "";
+            }
+            if (!isFreeForDD(d.Sup2_Name)) {
+                let backupPool = deptTeachers.filter(u => u.FullName !== d.TeacherName && u.FullName !== d.Sup1_Name).sort((a,b) => (parseInt(a.Sq)||999) - (parseInt(b.Sq)||999));
+                if (hod && hod.FullName !== d.TeacherName && isFreeForDD(hod.FullName)) d.Sup2_Name = hod.FullName;
+                else d.Sup2_Name = backupPool.find(u => isFreeForDD(u.FullName))?.FullName || "";
+            }
+            if (!isFreeForDD(d.Sup3_Name)) {
+                let backupPool = deptTeachers.filter(u => u.FullName !== d.TeacherName && u.FullName !== d.Sup1_Name && u.FullName !== d.Sup2_Name).sort((a,b) => (parseInt(a.Sq)||999) - (parseInt(b.Sq)||999));
+                d.Sup3_Name = backupPool.find(u => isFreeForDD(u.FullName))?.FullName || "";
+            }
+            
+            let sups = [];
+            if(d.Sup1_Name) sups.push(d.Sup1_Name);
+            if(d.Sup2_Name) sups.push(d.Sup2_Name);
+            if(d.Sup3_Name) sups.push(d.Sup3_Name);
+            d.Supervisors = JSON.stringify(sups);
+
+            // 🎨 วาด Dropdown กรรมการใหม่
+            let sup1Html = `<select onchange="updateDraftSup('${d.SupID}', 1, this.value)" class="w-full text-[10px] font-bold text-amber-900 bg-amber-50 p-1.5 rounded border border-amber-300 focus:border-amber-500 outline-none mb-1 shadow-sm">`;
+            if (d.Sup1_Name === teamLeader && teamLeader !== "") {
+                sup1Html += `<optgroup label="👑 ประธานหลัก (สถานะ: ว่าง)"><option value="${teamLeader}" selected>${teamLeader}</option></optgroup>`;
+            } else {
+                if (teamLeader !== "") sup1Html += `<optgroup label="⚠️ ประธานหลักติดภารกิจ"><option value="${teamLeader}" disabled>${teamLeader} (ติดสอน/ภารกิจ)</option></optgroup>`;
+                if (d.Sup1_Name) sup1Html += `<optgroup label="🔄 ตัวสำรอง (AI เลือก)"><option value="${d.Sup1_Name}" selected>${d.Sup1_Name}</option></optgroup>`;
+                else sup1Html += `<option value="">-- หาประธานว่างไม่ได้ --</option>`;
+            }
+            const freeExecs = allExecs.filter(u => u.FullName !== teamLeader && u.FullName !== d.Sup1_Name && u.FullName !== d.TeacherName && isFreeForDD(u.FullName));
+            if (freeExecs.length > 0) {
+                sup1Html += `<optgroup label="🟢 เปลี่ยนประธาน/ผู้บริหาร">`;
+                freeExecs.forEach(u => { 
+                    let roleTag = (typeof currentUser !== 'undefined' && u.FullName === currentUser.FullName) ? " (หัวหน้างานนิเทศ)" : "";
+                    sup1Html += `<option value="${u.FullName}">${u.FullName}${roleTag}</option>`; 
+                });
+                sup1Html += `</optgroup>`;
+            }
+            sup1Html += `</select>`;
+
+            let sup2Html = `<select onchange="updateDraftSup('${d.SupID}', 2, this.value)" class="w-full text-[10px] font-bold text-indigo-700 bg-white p-1.5 rounded border border-gray-300 focus:border-indigo-500 outline-none mb-1 shadow-sm">`;
+            sup2Html += `<option value="">-- ว่าง (เลือกเอง) --</option>`;
+            if (hod && hod.FullName !== d.TeacherName && isFreeForDD(hod.FullName)) {
+                let sel = (hod.FullName === d.Sup2_Name) ? 'selected' : '';
+                sup2Html += `<optgroup label="👑 หัวหน้าหมวด"><option value="${hod.FullName}" ${sel}>${hod.FullName}</option></optgroup>`;
+            }
+            let sqHigherHod = deptTeachers.filter(u => u.FullName !== d.TeacherName && u.FullName !== teamLeader && u.FullName !== (hod?hod.FullName:'') && (parseInt(u.Sq)||999) < hodSq && isFreeForDD(u.FullName));
+            if (sqHigherHod.length > 0) {
+                sup2Html += `<optgroup label="✅ Sq สูงกว่าหัวหน้าหมวด">`;
+                sqHigherHod.forEach(u => { let sel = (u.FullName === d.Sup2_Name) ? 'selected' : ''; sup2Html += `<option value="${u.FullName}" ${sel}>${u.FullName}</option>`; });
+                sup2Html += `</optgroup>`;
+            }
+            if (d.Sup2_Name && !sup2Html.includes(`value="${d.Sup2_Name}"`)) sup2Html += `<option value="${d.Sup2_Name}" selected>${d.Sup2_Name} (AI เลือก)</option>`;
+            sup2Html += `</select>`;
+
+            let sup3Html = `<select onchange="updateDraftSup('${d.SupID}', 3, this.value)" class="w-full text-[10px] font-bold text-indigo-700 bg-white p-1.5 rounded border border-gray-300 focus:border-indigo-500 outline-none shadow-sm">`;
+            sup3Html += `<option value="">-- ว่าง (เลือกเอง) --</option>`;
+            let plcM = [];
+            if (typeof plcGroupsDB_Global !== 'undefined') {
+                const tObj = usersDB_Global.find(u=>u.FullName === d.TeacherName);
+                if(tObj) {
+                    const tVals = Object.values(tObj);
+                    const tPlc = plcGroupsDB_Global.find(plc => {
+                        if(!plc.Members) return false;
+                        try { return JSON.parse(plc.Members).some(mId => tVals.includes(mId)); } catch(e){return false;}
+                    });
+                    if(tPlc) {
+                        try {
+                            const mIds = JSON.parse(tPlc.Members);
+                            plcM = usersDB_Global.filter(u => { const uVals = Object.values(u); return mIds.some(mId => uVals.includes(mId)) && u.FullName !== d.TeacherName && u.FullName !== teamLeader && isFreeForDD(u.FullName); });
+                        } catch(e){}
+                    }
+                }
+            }
+            let sqSame = usersDB_Global.filter(u => u.Department === dept && u.FullName !== d.TeacherName && u.FullName !== teamLeader && (parseInt(u.Sq)||999) < reqSq && isFreeForDD(u.FullName));
+            let sqDiff = usersDB_Global.filter(u => u.Department !== dept && u.FullName !== d.TeacherName && u.FullName !== teamLeader && (parseInt(u.Sq)||999) < reqSq && isFreeForDD(u.FullName));
+            
+            if (plcM.length > 0) {
+                sup3Html += `<optgroup label="🤝 กลุ่ม PLC เดียวกัน">`;
+                plcM.forEach(u => { let sel = (u.FullName === d.Sup3_Name) ? 'selected' : ''; sup3Html += `<option value="${u.FullName}" ${sel}>${u.FullName}</option>`; });
+                sup3Html += `</optgroup>`;
+            }
+            if (sqSame.length > 0) {
+                sup3Html += `<optgroup label="✅ Sq สูงกว่า (สาระเดียวกัน)">`;
+                sqSame.forEach(u => { let sel = (u.FullName === d.Sup3_Name) ? 'selected' : ''; sup3Html += `<option value="${u.FullName}" ${sel}>${u.FullName}</option>`; });
+                sup3Html += `</optgroup>`;
+            }
+            if (sqDiff.length > 0) {
+                sup3Html += `<optgroup label="🌐 Sq สูงกว่า (ต่างสาระ)">`;
+                sqDiff.forEach(u => { let sel = (u.FullName === d.Sup3_Name) ? 'selected' : ''; sup3Html += `<option value="${u.FullName}" ${sel}>${u.FullName} [${u.Department.substring(0,3)}]</option>`; });
+                sup3Html += `</optgroup>`;
+            }
+            if (d.Sup3_Name && !sup3Html.includes(`value="${d.Sup3_Name}"`)) sup3Html += `<option value="${d.Sup3_Name}" selected>${d.Sup3_Name} (AI เลือก)</option>`;
+            sup3Html += `</select>`;
+
+            document.getElementById(`supCell_${d.SupID}`).innerHTML = sup1Html + sup2Html + sup3Html;
+        };
+
+        // ==========================================
+        // 🚀 2. สมองกลหลัก: AI สร้างตาราง Draft (แก้บั๊ก ReqDate & TargetDate)
         // ==========================================
         function runSchedulerLogic(dept, startDate, endDate, teamLeader, excludeDays) {
             const sDate = new Date(startDate);
@@ -20973,12 +21255,10 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
             const deptTeachers = usersDB_Global.filter(u => u.Department === dept && (!u.Role.includes('BirdSpy') || u.Role.includes('User')));
             const hod = deptTeachers.find(u => u.Role.includes('HOD'));
             
-            // 💡 อัปเกรด: ดึงรายชื่อทีมบริหารทั้งหมด + เพิ่ม "ตัวเอง (หัวหน้างานนิเทศ)" เข้าไปในลิสต์ด้วย!
             let allExecs = usersDB_Global.filter(u => {
                 const r = u.Role || "";
-                return r.includes('DepDir') || r.includes('HOA') || r.includes('AsstDir') || r.includes('Director') || r.includes('EmpPngn') || u.FullName === currentUser.FullName;
+                return r.includes('DepDir') || r.includes('HOA') || r.includes('AsstDir') || r.includes('Director') || r.includes('EmpPngn') || (typeof currentUser !== 'undefined' && u.FullName === currentUser.FullName);
             });
-            // กรองชื่อซ้ำ (เผื่อแกมี Role เป็น HOA อยู่แล้ว)
             allExecs = Array.from(new Map(allExecs.map(item => [item.FullName, item])).values());
 
             window.tempTypeBDrafts = [];
@@ -20998,17 +21278,17 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
                 if (currentRound === 'ALL') currentRound = 'รอบที่ 1';
 
                 const safeId = teacher.FullName.replace(/\s+/g, '_');
-                const lockDateEl = document.getElementById(`lockDate_${safeId}`);
-                const lockPeriodEl = document.getElementById(`lockPeriod_${safeId}`);
-                const lockedDateVal = lockDateEl ? lockDateEl.value : "";
-                const lockedPeriodVal = lockPeriodEl ? lockPeriodEl.value : "";
+                const smartLockVal = document.getElementById(`smartLock_${safeId}`)?.value || "";
+                let lockedDateVal = "", lockedPeriodVal = "";
+                if (smartLockVal) {
+                    const parts = smartLockVal.split('|');
+                    lockedDateVal = parts[0];
+                    lockedPeriodVal = parts[1];
+                }
 
                 let loopStart = new Date(sDate);
                 let loopEnd = new Date(eDate);
-                if (lockedDateVal) {
-                    loopStart = new Date(lockedDateVal);
-                    loopEnd = new Date(lockedDateVal);
-                }
+                if (lockedDateVal) { loopStart = new Date(lockedDateVal); loopEnd = new Date(lockedDateVal); }
 
                 for (let d = new Date(loopStart); d <= loopEnd; d.setDate(d.getDate() + 1)) {
                     if (d.getDay() === 0 || d.getDay() === 6) continue;
@@ -21024,23 +21304,16 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
 
                         const subject = tt[`Period${p}`];
                         if ((lockedDateVal && lockedPeriodVal) || (subject && subject.trim() !== '')) {
-                            
-                            // ลอจิก: ให้ประธานหลัก (teamLeader) เป็น Default เสมอ! ถ้าไม่ว่างค่อยดึงสำรอง
                             let finalChair = teamLeader;
-                            if (!isFree(teamLeader, dateStr, p, dayName)) {
-                                finalChair = allExecs.find(u => u.FullName !== teacher.FullName && isFree(u.FullName, dateStr, p, dayName))?.FullName;
-                            }
-                            
+                            if (!isFree(teamLeader, dateStr, p, dayName)) finalChair = allExecs.find(u => u.FullName !== teacher.FullName && isFree(u.FullName, dateStr, p, dayName))?.FullName;
                             if (!finalChair) continue;
 
                             let requiredSups = [finalChair];
                             let backupPool = deptTeachers.filter(u => u.FullName !== teacher.FullName && u.FullName !== finalChair).sort((a,b) => (parseInt(a.Sq)||999) - (parseInt(b.Sq)||999));
-
                             if (hod && hod.FullName !== teacher.FullName && isFree(hod.FullName, dateStr, p, dayName)) {
                                 requiredSups.push(hod.FullName);
                                 backupPool = backupPool.filter(u => u.FullName !== hod.FullName);
                             }
-
                             for (let b of backupPool) {
                                 if (requiredSups.length >= 3) break;
                                 if (isFree(b.FullName, dateStr, p, dayName)) requiredSups.push(b.FullName);
@@ -21049,12 +21322,13 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
                             if (requiredSups.length === 3) {
                                 return {
                                     SupID: "B_" + Date.now() + "_" + Math.floor(Math.random()*1000),
+                                    ReqDate: new Date().toISOString(), // 💡 เพิ่มคีย์ ReqDate เข้าไปใหม่ จะได้ไม่โบ๋แล้ว!
                                     Timestamp: new Date().toISOString(),
                                     Round: currentRound,
                                     Semester: "2",
                                     AcademicYear: "2569",
                                     TeacherName: teacher.FullName,
-                                    TargetDate: dateStr + "T00:00:00.000Z",
+                                    TargetDate: dateStr, // 🛑 ลบ T00:00:00.000Z ทิ้ง ส่งแค่ YYYY-MM-DD พอ
                                     Period: p.toString(),
                                     SubjectData: subject || "ไม่ระบุวิชา (Manual Lock)",
                                     SupType: 'B',
@@ -21077,127 +21351,59 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
                 else missingList.push(m.FullName);
             });
 
-            // 🎨 วาด Draft Table แบบฝัง Dropdown
             const tbody = document.getElementById('typeBDraftTableBody');
             tbody.innerHTML = '';
             
             if (window.tempTypeBDrafts.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="3" class="p-5 text-center text-rose-500 font-bold">⚠️ หาคิวว่างตรงกันไม่ได้เลยครับ (ถ้าเลือกล็อกเป้าไว้ อาจจะไม่มีกรรมการว่างในคาบนั้น)</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="3" class="p-5 text-center text-rose-500 font-bold">⚠️ หาคิวว่างตรงกันไม่ได้เลยครับ (ลองเปลี่ยนช่วงวัน/คนล็อก)</td></tr>`;
             } else {
                 window.tempTypeBDrafts.forEach(d => {
-                    const checkDate = new Date(d.TargetDate);
-                    const dDate = checkDate.toLocaleDateString('th-TH', { day:'numeric', month:'short', year:'numeric' });
-                    const dateStr = checkDate.toISOString().split('T')[0];
-                    const dayName = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"][checkDate.getDay()];
-                    
-                    const isFreeForDD = (tName) => {
-                        if(!tName) return false;
-                        const tt = timetableDB_Global.find(x => x.TeacherName === tName && x.Day === dayName);
-                        if (tt && tt[`Period${d.Period}`] && tt[`Period${d.Period}`].trim() !== '') return false;
-                        const busySup = supervisionDB_Global.some(s => s.TargetDate.split('T')[0] === dateStr && parseInt(s.Period) === parseInt(d.Period) && (s.TeacherName === tName || (s.Supervisors && s.Supervisors.includes(tName))));
-                        if (busySup) return false;
-                        const busyDraft = window.tempTypeBDrafts.some(draft => draft.SupID !== d.SupID && draft.TargetDate.split('T')[0] === dateStr && parseInt(draft.Period) === parseInt(d.Period) && (draft.TeacherName === tName || draft.Supervisors.includes(tName)));
-                        return !busyDraft;
-                    };
+                    let slotOptionsHtml = '';
+                    const tt = timetableDB_Global.filter(x => x.TeacherName === d.TeacherName);
+                    for (let loopD = new Date(sDate); loopD <= eDate; loopD.setDate(loopD.getDate() + 1)) {
+                        if (loopD.getDay() === 0 || loopD.getDay() === 6) continue;
+                        if (excludeDays.includes(loopD.getDate())) continue;
+                        
+                        const loopDateStr = loopD.toISOString().split('T')[0];
+                        const loopShortDate = loopD.toLocaleDateString('th-TH', { day:'numeric', month:'short' });
+                        const loopDayName = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"][loopD.getDay()];
+                        const dayTt = tt.find(x => x.Day === loopDayName);
+                        if(!dayTt) continue;
 
-                    const hodSq = hod ? (parseInt(hod.Sq)||999) : 999;
-                    const reqSq = parseInt(usersDB_Global.find(u=>u.FullName === d.TeacherName)?.Sq) || 999;
-
-                    // 💡 1. วาด Dropdown Slot 1 (ดึงประธาน, ทีมบริหาร, และแก เข้ามาโชว์)
-                    let sup1Html = `<select onchange="updateDraftSup('${d.SupID}', 1, this.value)" class="w-full text-xs font-bold text-amber-900 bg-amber-50 p-1.5 rounded border border-amber-300 focus:border-amber-500 outline-none mb-1 shadow-sm">`;
-                    if (d.Sup1_Name === teamLeader) {
-                        sup1Html += `<optgroup label="👑 ประธานหลัก (สถานะ: ว่าง)"><option value="${teamLeader}" selected>${teamLeader}</option></optgroup>`;
-                    } else {
-                        sup1Html += `<optgroup label="⚠️ ประธานหลักติดภารกิจ"><option value="${teamLeader}" disabled>${teamLeader} (ติดสอน/ภารกิจ)</option></optgroup>`;
-                        sup1Html += `<optgroup label="🔄 ตัวสำรอง (AI เลือกให้)"><option value="${d.Sup1_Name}" selected>${d.Sup1_Name}</option></optgroup>`;
-                    }
-                    
-                    const freeExecs = allExecs.filter(u => u.FullName !== teamLeader && u.FullName !== d.Sup1_Name && u.FullName !== d.TeacherName && isFreeForDD(u.FullName));
-                    if (freeExecs.length > 0) {
-                        sup1Html += `<optgroup label="🟢 เปลี่ยนประธาน/ผู้บริหารท่านอื่น">`;
-                        freeExecs.forEach(u => { 
-                            let roleTag = (u.FullName === currentUser.FullName) ? " (หัวหน้างานนิเทศ)" : "";
-                            sup1Html += `<option value="${u.FullName}">${u.FullName}${roleTag}</option>`; 
-                        });
-                        sup1Html += `</optgroup>`;
-                    }
-                    sup1Html += `</select>`;
-
-                    // 🤝 2. วาด Dropdown Slot 2 (HOD + Sq สูงกว่าหัวหน้าหมวด)
-                    let sup2Html = `<select onchange="updateDraftSup('${d.SupID}', 2, this.value)" class="w-full text-xs font-bold text-indigo-700 bg-white p-1.5 rounded border border-gray-300 focus:border-indigo-500 outline-none mb-1 shadow-sm">`;
-                    sup2Html += `<option value="">-- ว่าง (เลือกเอง) --</option>`;
-                    if (hod && hod.FullName !== d.TeacherName && isFreeForDD(hod.FullName)) {
-                        let sel = (hod.FullName === d.Sup2_Name) ? 'selected' : '';
-                        sup2Html += `<optgroup label="👑 หัวหน้าหมวด"><option value="${hod.FullName}" ${sel}>${hod.FullName}</option></optgroup>`;
-                    }
-                    let sqHigherHod = deptTeachers.filter(u => u.FullName !== d.TeacherName && u.FullName !== teamLeader && u.FullName !== (hod?hod.FullName:'') && (parseInt(u.Sq)||999) < hodSq && isFreeForDD(u.FullName));
-                    if (sqHigherHod.length > 0) {
-                        sup2Html += `<optgroup label="✅ Sq สูงกว่าหัวหน้าหมวด">`;
-                        sqHigherHod.forEach(u => { let sel = (u.FullName === d.Sup2_Name) ? 'selected' : ''; sup2Html += `<option value="${u.FullName}" ${sel}>${u.FullName}</option>`; });
-                        sup2Html += `</optgroup>`;
-                    }
-                    if (d.Sup2_Name && !sup2Html.includes(`value="${d.Sup2_Name}"`)) sup2Html += `<option value="${d.Sup2_Name}" selected>${d.Sup2_Name} (AI เลือก)</option>`;
-                    sup2Html += `</select>`;
-
-                    // 🌐 3. วาด Dropdown Slot 3 (PLC -> Sq หมวดเดียวกัน -> Sq ต่างหมวด)
-                    let sup3Html = `<select onchange="updateDraftSup('${d.SupID}', 3, this.value)" class="w-full text-xs font-bold text-indigo-700 bg-white p-1.5 rounded border border-gray-300 focus:border-indigo-500 outline-none shadow-sm">`;
-                    sup3Html += `<option value="">-- ว่าง (เลือกเอง) --</option>`;
-
-                    let plcM = [];
-                    if (typeof plcGroupsDB_Global !== 'undefined') {
-                        const tObj = usersDB_Global.find(u=>u.FullName === d.TeacherName);
-                        if(tObj) {
-                            const tVals = Object.values(tObj);
-                            const tPlc = plcGroupsDB_Global.find(plc => {
-                                if(!plc.Members) return false;
-                                try { return JSON.parse(plc.Members).some(mId => tVals.includes(mId)); } catch(e){return false;}
-                            });
-                            if(tPlc) {
-                                try {
-                                    const mIds = JSON.parse(tPlc.Members);
-                                    plcM = usersDB_Global.filter(u => { const uVals = Object.values(u); return mIds.some(mId => uVals.includes(mId)) && u.FullName !== d.TeacherName && u.FullName !== teamLeader && isFreeForDD(u.FullName); });
-                                } catch(e){}
+                        for (let p = 1; p <= 9; p++) {
+                            const subject = dayTt[`Period${p}`];
+                            if (subject && subject.trim() !== '') {
+                                const val = `${loopDateStr}|${p}|${subject}`;
+                                const isSelected = (loopDateStr === d.TargetDate.split('T')[0] && p.toString() === d.Period.toString()) ? 'selected' : '';
+                                let shortSubj = subject.split(' ')[0] + " " + (subject.split(' ')[1] || "");
+                                slotOptionsHtml += `<option value="${val}" ${isSelected}>🗓️ ${loopShortDate} | คาบ ${p} | ${shortSubj}</option>`;
                             }
                         }
                     }
-                    let sqSame = usersDB_Global.filter(u => u.Department === dept && u.FullName !== d.TeacherName && u.FullName !== teamLeader && (parseInt(u.Sq)||999) < reqSq && isFreeForDD(u.FullName));
-                    let sqDiff = usersDB_Global.filter(u => u.Department !== dept && u.FullName !== d.TeacherName && u.FullName !== teamLeader && (parseInt(u.Sq)||999) < reqSq && isFreeForDD(u.FullName));
-                    
-                    if (plcM.length > 0) {
-                        sup3Html += `<optgroup label="🤝 กลุ่ม PLC เดียวกัน">`;
-                        plcM.forEach(u => { let sel = (u.FullName === d.Sup3_Name) ? 'selected' : ''; sup3Html += `<option value="${u.FullName}" ${sel}>${u.FullName}</option>`; });
-                        sup3Html += `</optgroup>`;
-                    }
-                    if (sqSame.length > 0) {
-                        sup3Html += `<optgroup label="✅ Sq สูงกว่า (สาระเดียวกัน)">`;
-                        sqSame.forEach(u => { let sel = (u.FullName === d.Sup3_Name) ? 'selected' : ''; sup3Html += `<option value="${u.FullName}" ${sel}>${u.FullName}</option>`; });
-                        sup3Html += `</optgroup>`;
-                    }
-                    if (sqDiff.length > 0) {
-                        sup3Html += `<optgroup label="🌐 Sq สูงกว่า (ต่างสาระ)">`;
-                        sqDiff.forEach(u => { let sel = (u.FullName === d.Sup3_Name) ? 'selected' : ''; sup3Html += `<option value="${u.FullName}" ${sel}>${u.FullName} [${u.Department.substring(0,3)}]</option>`; });
-                        sup3Html += `</optgroup>`;
-                    }
-                    if (d.Sup3_Name && !sup3Html.includes(`value="${d.Sup3_Name}"`)) sup3Html += `<option value="${d.Sup3_Name}" selected>${d.Sup3_Name} (AI เลือก)</option>`;
-                    sup3Html += `</select>`;
 
-                    const isLocked = document.getElementById(`lockDate_${d.TeacherName.replace(/\s+/g, '_')}`)?.value || document.getElementById(`lockPeriod_${d.TeacherName.replace(/\s+/g, '_')}`)?.value;
-                    const lockBadge = isLocked ? `<span class="bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded text-[9px] font-black border border-indigo-200 mt-1 inline-block">📌 แอดมินล็อกเป้า</span>` : '';
+                    const smartLockVal = document.getElementById(`smartLock_${d.TeacherName.replace(/\s+/g, '_')}`)?.value;
+                    const lockBadge = smartLockVal ? `<span class="bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded text-[9px] font-black border border-indigo-200 mt-1 inline-block">📌 แอดมินเลือกล็อกคาบ</span>` : '';
 
                     tbody.innerHTML += `
                     <tr class="hover:bg-emerald-50/50">
-                        <td class="px-4 py-3 border-b border-gray-100">
-                            <div class="font-bold text-gray-800">${d.TeacherName}</div>
-                            <div class="text-[10px] text-emerald-600 font-bold">🗓️ ${dDate}</div>
+                        <td class="px-4 py-3 border-b border-gray-100 align-top">
+                            <div class="font-black text-gray-800 text-[13px] mb-1">${d.TeacherName}</div>
                             ${lockBadge}
                         </td>
-                        <td class="px-4 py-3 border-b border-gray-100 text-xs font-bold text-indigo-700">${d.SubjectData} <br><span class="text-gray-500">คาบ ${d.Period}</span></td>
-                        <td class="px-4 py-3 border-b border-gray-100 text-xs">
-                            ${sup1Html}
-                            ${sup2Html}
-                            ${sup3Html}
+                        <td class="px-4 py-3 border-b border-gray-100 align-top">
+                            <select onchange="updateDraftSlot('${d.SupID}', this.value)" class="w-full text-[11px] p-2 border border-emerald-300 rounded-lg outline-none focus:border-emerald-500 font-bold text-emerald-800 bg-white shadow-sm cursor-pointer hover:bg-emerald-50 transition-colors">
+                                ${slotOptionsHtml || `<option value="${d.TargetDate.split('T')[0]}|${d.Period}|${d.SubjectData}">🗓️ ${new Date(d.TargetDate).toLocaleDateString('th-TH', { day:'numeric', month:'short' })} | คาบ ${d.Period} | ${d.SubjectData}</option>`}
+                            </select>
+                            <div class="text-[9px] text-gray-400 mt-1">✔️ เปลี่ยนคาบได้ (AI จะคำนวณกรรมการให้ใหม่)</div>
+                        </td>
+                        <td class="px-4 py-3 border-b border-gray-100 align-top" id="supCell_${d.SupID}">
+                            <!-- JS จะมาวาดกรรมการลงตรงนี้ -->
                         </td>
                     </tr>`;
+                });
+
+                window.tempTypeBDrafts.forEach(d => {
+                    window.renderDraftRowSupervisors(d.SupID);
                 });
             }
 
@@ -21209,37 +21415,71 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
         // ==========================================
         // 🚀 2. อัปเดต AI Auto-Scheduler (ดักกฎ HOD ต้องมาก่อน)
         // ==========================================
-        // แกหาบรรทัด 'window.generateTypeBSchedule = function() {' ของเก่า แล้ววางทับลงไปเลยนะ
-        window.generateTypeBSchedule = function() {
+        // ==========================================
+        // ⚡ ปุ่มสแกนคิวลูกหมวด (V.ฉลาดขึ้น วิ่งเช็คฐานข้อมูลอัตโนมัติ)
+        // ==========================================
+        window.generateTypeBSchedule = async function() {
             const dept = document.getElementById('genDept').value;
             const startDate = document.getElementById('genStartDate').value;
             const endDate = document.getElementById('genEndDate').value;
-            const excludeStr = document.getElementById('genExcludeDates').value;
+            const excludeDaysInput = document.getElementById('genExcludeDates').value;
 
-            if (!dept || !startDate || !endDate) return typeof customAlert === 'function' ? customAlert("กรุณากรอกวันที่ และเลือกกลุ่มสาระให้ครบครับ!", "warning") : alert("กรอกข้อมูลให้ครบก่อน!");
-
-            // 👑 กฎเหล็ก: เช็คว่า HOD ของหมวดนี้มีคิวหรือยัง?
-            const hod = usersDB_Global.find(u => u.Department === dept && u.Role.includes('HOD'));
-            if (hod) {
-                const isHodScheduled = supervisionDB_Global.some(s => s.TeacherName === hod.FullName && s.Status !== 'Rejected');
-                if (!isHodScheduled) {
-                    return typeof customAlert === 'function' ? customAlert(`⚠️ ต้องจัดคิว VIP ให้หัวหน้าหมวด (${hod.FullName}) ให้เสร็จก่อนครับ! (ไปทำที่ข้อ 2)`, "error") : alert("ต้องจัดคิว HOD ก่อน!");
-                }
+            if (!dept || !startDate || !endDate) {
+                return typeof customAlert === 'function' ? customAlert('กรุณาเลือกวันเริ่มต้น วันสิ้นสุด และกลุ่มสาระก่อนครับ', 'warning') : alert('กรอกข้อมูลให้ครบถ้วน');
             }
 
-            const savedChairs = JSON.parse(localStorage.getItem('typeB_chairs') || "{}");
-            const teamLeader = savedChairs[dept];
-            if (!teamLeader) return typeof customAlert === 'function' ? customAlert(`ยังไม่ได้ตั้งค่า 'ประธานนิเทศ' หมวด ${dept}`, "error") : alert("ยังไม่ได้ตั้งค่าประธาน!");
+            // 🌟 ทริค: จับปุ่มที่กดมาเปลี่ยนสถานะเป็นหมวดโหลดดิ้ง เพื่อให้แอดมินรู้ว่าระบบกำลังทำงาน
+            const btn = document.querySelector('button[onclick="generateTypeBSchedule()"]');
+            let origHtml = "⚡ สแกนคิวลูกหมวด";
+            if (btn) {
+                origHtml = btn.innerHTML;
+                btn.innerHTML = '<div class="loader loader-white mr-2 border-2 inline-block w-4 h-4 align-middle"></div> กำลังตรวจสอบฐานข้อมูล...';
+                btn.disabled = true;
+            }
 
-            const excludeDays = excludeStr.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
-            const btn = window.event.currentTarget;
-            const origTxt = btn.innerHTML;
-            btn.innerHTML = 'กำลังประมวลผล...'; btn.disabled = true;
+            try {
+                // 1. ลองค้นความจำในเครื่องก่อน (LocalStorage)
+                let savedChairs = JSON.parse(localStorage.getItem('typeB_chairs') || "{}");
+                let teamLeader = savedChairs[dept];
 
-            setTimeout(() => {
+                // 2. 🛡️ ถ้าในเครื่องลืม! ให้วิ่งไปสูบข้อมูลจาก Database (Google Sheets) แบบอัตโนมัติ
+                if (!teamLeader || String(teamLeader).trim() === "") {
+                    const payload = { action: 'getChairSettings' };
+                    const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: "follow" });
+                    const result = await res.json();
+                    
+                    if (result.status === 'success' && result.data) {
+                        savedChairs = result.data;
+                        // อัปเดตความจำในเครื่องให้ใหม่เอี่ยม
+                        localStorage.setItem('typeB_chairs', JSON.stringify(savedChairs));
+                        teamLeader = savedChairs[dept];
+                    }
+                }
+
+                // 3. ถ้าไปถาม Database แล้วก็ยังไม่มีอีก (แปลว่ายังไม่เคยตั้งค่าจริงๆ) ค่อยเด้งแจ้งเตือนสีแดง!
+                if (!teamLeader || String(teamLeader).trim() === "") {
+                    if(btn) { btn.innerHTML = origHtml; btn.disabled = false; }
+                    return typeof customAlert === 'function' 
+                        ? customAlert(`ยังไม่ได้ตั้งค่า 'ประธานนิเทศ' หมวด ${dept}`, 'error') 
+                        : alert(`ยังไม่ได้ตั้งค่าประธานหมวด ${dept}`);
+                }
+
+                // 4. ข้อมูลพร้อม ลุยรัน AI สแกนคิวได้เลย!
+                const excludeDays = excludeDaysInput ? excludeDaysInput.split(',').map(d => parseInt(d.trim())) : [];
                 runSchedulerLogic(dept, startDate, endDate, teamLeader, excludeDays);
-                btn.innerHTML = origTxt; btn.disabled = false;
-            }, 50);
+
+            } catch (e) {
+                console.error("🔥 พังตอนสแกนคิว:", e);
+                typeof customAlert === 'function' 
+                    ? customAlert('เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล: ' + e.message, 'error') 
+                    : alert('Error: ' + e.message);
+            } finally {
+                // คืนสภาพปุ่มกลับมาเหมือนเดิม
+                if (btn) {
+                    btn.innerHTML = origHtml;
+                    btn.disabled = false;
+                }
+            }
         };
         // (ส่วน runSchedulerLogic และ saveAllTypeBDrafts ใช้ของเดิมที่ให้ไปรอบที่แล้วได้เลย เพราะตอนนี้มันรันเฉพาะลูกหมวดแล้ว!)   
     </script>
