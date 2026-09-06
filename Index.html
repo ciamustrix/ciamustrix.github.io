@@ -254,7 +254,7 @@
             
             <div class="mt-8 text-center border-t border-gray-200/50 pt-4">
                 <p class="text-xs text-gray-500 font-medium mb-1">โรงเรียนวังตะเคียนวิทยาคม | ฝ่ายบริหารงานวิชาการ</p>
-                <p class="text-[10px] text-sky-700/60 font-bold tracking-wide">V 1.03.04.09 [Sep 4th, 2026 - 04:09] | TESTING-f(Sv)</p>
+                <p class="text-[10px] text-sky-700/60 font-bold tracking-wide">V 1.03.04.09 [Sep 4th, 2026 - 04:09] | Dev[f(Sv-B)]</p>
                 <p class="text-xs text-gray-500 font-medium mb-1">Dev. by Thuntathorn 😁 | Dedicated to #IWreal and JLT</p>
             </div>
         </div>
@@ -21448,17 +21448,19 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
         };
 
         // ==========================================
-        // 🚀 2. สมองกลหลัก: AI สร้างตาราง Draft (แก้บั๊ก ReqDate & TargetDate)
+        // 🚀 2. สมองกลหลัก: AI สร้างตาราง Draft (V.ปลดล็อก AI หัวแข็ง ยืมครูข้ามหมวดได้)
         // ==========================================
         function runSchedulerLogic(dept, startDate, endDate, teamLeader, excludeDays) {
             const sDate = new Date(startDate);
             const eDate = new Date(endDate);
-            const deptTeachers = usersDB_Global.filter(u => u.Department === dept && (!u.Role.includes('BirdSpy') || u.Role.includes('User')));
-            const hod = deptTeachers.find(u => u.Role.includes('HOD'));
+            
+            const deptTeachers = usersDB_Global.filter(u => u.Department === dept && (!(u.Role || '').includes('BirdSpy') || (u.Role || '').includes('User')) && u.Status !== 'Inactive' && u.Status !== 'ระงับการใช้งาน');
+            const hod = deptTeachers.find(u => (u.Role || '').includes('HOD'));
             
             let allExecs = usersDB_Global.filter(u => {
                 const r = u.Role || "";
-                return r.includes('DepDir') || r.includes('HOA') || r.includes('AsstDir') || r.includes('Director') || r.includes('EmpPngn') || (typeof currentUser !== 'undefined' && u.FullName === currentUser.FullName);
+                return (r.includes('DepDir') || r.includes('HOA') || r.includes('AsstDir') || r.includes('Director') || r.includes('EmpPngn') || (typeof currentUser !== 'undefined' && u.FullName === currentUser.FullName)) 
+                        && u.Status !== 'Inactive' && u.Status !== 'ระงับการใช้งาน';
             });
             allExecs = Array.from(new Map(allExecs.map(item => [item.FullName, item])).values());
 
@@ -21505,41 +21507,66 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
 
                         const subject = tt[`Period${p}`];
                         if ((lockedDateVal && lockedPeriodVal) || (subject && subject.trim() !== '')) {
+                            
                             let finalChair = teamLeader;
-                            if (!isFree(teamLeader, dateStr, p, dayName)) finalChair = allExecs.find(u => u.FullName !== teacher.FullName && isFree(u.FullName, dateStr, p, dayName))?.FullName;
-                            if (!finalChair) continue;
+                            if (!isFree(teamLeader, dateStr, p, dayName)) {
+                                finalChair = allExecs.find(u => u.FullName !== teacher.FullName && isFree(u.FullName, dateStr, p, dayName))?.FullName;
+                            }
+                            if (!finalChair) continue; // ถ้าประธานว่างไม่ได้เลยจริงๆ ค่อยยอมแพ้ในคาบนี้
 
                             let requiredSups = [finalChair];
-                            let backupPool = deptTeachers.filter(u => u.FullName !== teacher.FullName && u.FullName !== finalChair).sort((a,b) => (parseInt(a.Sq)||999) - (parseInt(b.Sq)||999));
-                            if (hod && hod.FullName !== teacher.FullName && isFree(hod.FullName, dateStr, p, dayName)) {
+                            
+                            // 💡 1. ลองดึง HOD ก่อน
+                            if (hod && hod.FullName !== teacher.FullName && hod.FullName !== finalChair && isFree(hod.FullName, dateStr, p, dayName)) {
                                 requiredSups.push(hod.FullName);
-                                backupPool = backupPool.filter(u => u.FullName !== hod.FullName);
                             }
-                            for (let b of backupPool) {
+                            
+                            // 💡 2. ดึงคนในหมวดเดียวกันที่ว่าง
+                            let deptBackups = deptTeachers.filter(u => u.FullName !== teacher.FullName && !requiredSups.includes(u.FullName)).sort((a,b) => (parseInt(a.Sq)||999) - (parseInt(b.Sq)||999));
+                            for (let b of deptBackups) {
                                 if (requiredSups.length >= 3) break;
                                 if (isFree(b.FullName, dateStr, p, dayName)) requiredSups.push(b.FullName);
                             }
-
-                            if (requiredSups.length === 3) {
-                                return {
-                                    SupID: "B_" + Date.now() + "_" + Math.floor(Math.random()*1000),
-                                    ReqDate: new Date().toISOString(), // 💡 เพิ่มคีย์ ReqDate เข้าไปใหม่ จะได้ไม่โบ๋แล้ว!
-                                    Timestamp: new Date().toISOString(),
-                                    Round: currentRound,
-                                    Semester: "2",
-                                    AcademicYear: "2569",
-                                    TeacherName: teacher.FullName,
-                                    TargetDate: dateStr, // 🛑 ลบ T00:00:00.000Z ทิ้ง ส่งแค่ YYYY-MM-DD พอ
-                                    Period: p.toString(),
-                                    SubjectData: subject || "ไม่ระบุวิชา (Manual Lock)",
-                                    SupType: 'B',
-                                    Status: 'Pending',               
-                                    Sup1_Name: requiredSups[0], Sup1_Status: 'Pending', 
-                                    Sup2_Name: requiredSups[1], Sup2_Status: 'Pending', 
-                                    Sup3_Name: requiredSups[2], Sup3_Status: 'Pending', 
-                                    Supervisors: JSON.stringify(requiredSups)
-                                };
+                            
+                            // 🚨 3. [แก้เผ็ด AI] คนในหมวดไม่พอ? ยืมครูทั้งโรงเรียนที่ว่างมาช่วย!
+                            if (requiredSups.length < 3) {
+                                let globalBackups = usersDB_Global.filter(u => 
+                                    u.FullName !== teacher.FullName && 
+                                    !requiredSups.includes(u.FullName) && 
+                                    (!(u.Role || '').includes('BirdSpy') || (u.Role || '').includes('User')) &&
+                                    u.Status !== 'Inactive' && u.Status !== 'ระงับการใช้งาน'
+                                ).sort((a,b) => (parseInt(a.Sq)||999) - (parseInt(b.Sq)||999));
+                                
+                                for (let b of globalBackups) {
+                                    if (requiredSups.length >= 3) break;
+                                    if (isFree(b.FullName, dateStr, p, dayName)) requiredSups.push(b.FullName);
+                                }
                             }
+
+                            // 🚨 4. [แก้เผ็ดขั้นสุด] ถ้าสุดวิสัยจริงๆ หาไม่ได้ครบ 3 คน ก็เอาเท่าที่ได้ ยัดช่องว่างให้แอดมินเลือกเอง!
+                            while(requiredSups.length < 3) {
+                                requiredSups.push(""); 
+                            }
+
+                            // ส่งคิวจัดตารางทันที!
+                            return {
+                                SupID: "B_" + Date.now() + "_" + Math.floor(Math.random()*1000),
+                                ReqDate: new Date().toISOString(),
+                                Timestamp: new Date().toISOString(),
+                                Round: currentRound,
+                                Semester: "2",
+                                AcademicYear: "2569", 
+                                TeacherName: teacher.FullName,
+                                TargetDate: dateStr,
+                                Period: p.toString(),
+                                SubjectData: subject || "ไม่ระบุวิชา (Manual Lock)",
+                                SupType: 'B',
+                                Status: 'Pending',               
+                                Sup1_Name: requiredSups[0], Sup1_Status: 'Pending', 
+                                Sup2_Name: requiredSups[1] || '', Sup2_Status: 'Pending', 
+                                Sup3_Name: requiredSups[2] || '', Sup3_Status: 'Pending', 
+                                Supervisors: JSON.stringify(requiredSups.filter(n => n !== ""))
+                            };
                         }
                     }
                 }
@@ -21553,10 +21580,11 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
             });
 
             const tbody = document.getElementById('typeBDraftTableBody');
+            if(!tbody) return;
             tbody.innerHTML = '';
             
             if (window.tempTypeBDrafts.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="3" class="p-5 text-center text-rose-500 font-bold">⚠️ หาคิวว่างตรงกันไม่ได้เลยครับ (ลองเปลี่ยนช่วงวัน/คนล็อก)</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="3" class="p-5 text-center text-rose-500 font-bold">⚠️ ประธาน/ผู้บริหาร ติดภารกิจในช่วงวันดังกล่าวทั้งหมดครับ (ลองเปลี่ยนช่วงวัน/คนล็อก)</td></tr>`;
             } else {
                 window.tempTypeBDrafts.forEach(d => {
                     let slotOptionsHtml = '';
@@ -21576,8 +21604,8 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
                             if (subject && subject.trim() !== '') {
                                 const val = `${loopDateStr}|${p}|${subject}`;
                                 const isSelected = (loopDateStr === d.TargetDate.split('T')[0] && p.toString() === d.Period.toString()) ? 'selected' : '';
-                                let shortSubj = subject.split(' ')[0] + " " + (subject.split(' ')[1] || "");
-                                slotOptionsHtml += `<option value="${val}" ${isSelected}>🗓️ ${loopShortDate} | คาบ ${p} | ${shortSubj}</option>`;
+                                
+                                slotOptionsHtml += `<option value="${val}" ${isSelected}>🗓️ ${loopShortDate} | คาบ ${p} : ${subject}</option>`;
                             }
                         }
                     }
@@ -21592,26 +21620,27 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
                             ${lockBadge}
                         </td>
                         <td class="px-4 py-3 border-b border-gray-100 align-top">
-                            <select onchange="updateDraftSlot('${d.SupID}', this.value)" class="w-full text-[11px] p-2 border border-emerald-300 rounded-lg outline-none focus:border-emerald-500 font-bold text-emerald-800 bg-white shadow-sm cursor-pointer hover:bg-emerald-50 transition-colors">
-                                ${slotOptionsHtml || `<option value="${d.TargetDate.split('T')[0]}|${d.Period}|${d.SubjectData}">🗓️ ${new Date(d.TargetDate).toLocaleDateString('th-TH', { day:'numeric', month:'short' })} | คาบ ${d.Period} | ${d.SubjectData}</option>`}
+                            <select onchange="updateDraftSlot('${d.SupID}', this.value)" class="w-full min-w-[260px] max-w-sm text-[12px] p-2.5 border-2 border-emerald-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 font-bold text-emerald-900 bg-white shadow-sm cursor-pointer hover:bg-emerald-50 transition-colors truncate">
+                                ${slotOptionsHtml || `<option value="${d.TargetDate.split('T')[0]}|${d.Period}|${d.SubjectData}">🗓️ ${new Date(d.TargetDate).toLocaleDateString('th-TH', { day:'numeric', month:'short' })} | คาบ ${d.Period} : ${d.SubjectData}</option>`}
                             </select>
-                            <div class="text-[9px] text-gray-400 mt-1">✔️ เปลี่ยนคาบได้ (AI จะคำนวณกรรมการให้ใหม่)</div>
+                            <div class="text-[10px] text-gray-500 mt-1.5">✔️ เปลี่ยนคาบได้ (AI จะคำนวณกรรมการให้ใหม่)</div>
                         </td>
                         <td class="px-4 py-3 border-b border-gray-100 align-top" id="supCell_${d.SupID}">
                             <!-- JS จะมาวาดกรรมการลงตรงนี้ -->
                         </td>
                     </tr>`;
                 });
-
-                window.tempTypeBDrafts.forEach(d => {
-                    window.renderDraftRowSupervisors(d.SupID);
-                });
             }
 
-            if(missingList.length > 0) {
-                tbody.innerHTML += `<tr><td colspan="3" class="p-3 bg-amber-50 text-amber-700 text-xs font-bold text-center border-b border-amber-200">⚠️ จัดคิวไม่ได้ ${missingList.length} คน: ${missingList.join(', ')}</td></tr>`;
+            const container = document.getElementById('typeBDraftContainer');
+            if (container) {
+                container.classList.remove('hidden');
+                container.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
-            document.getElementById('typeBDraftContainer').classList.remove('hidden');
+            
+            if (typeof renderDraftCommittees === 'function') {
+                renderDraftCommittees();
+            }
         }
         // ==========================================
         // 🚀 2. อัปเดต AI Auto-Scheduler (ดักกฎ HOD ต้องมาก่อน)
