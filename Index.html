@@ -2282,7 +2282,7 @@
                                     <div class="space-y-1">
                                         <label class="text-[10px] font-bold text-amber-700">1. เลือกกลุ่มสาระ</label>
                                         <select id="vipHodDept" onchange="loadHodVipData()" class="w-full text-xs font-bold text-gray-700 p-2.5 border border-gray-300 rounded-lg outline-none focus:border-amber-500 bg-white shadow-sm">
-                                            <option value="">-- เลือกกลุ่มสาระ --</option><option value="ภาษาไทย">ภาษาไทย</option><option value="คณิตศาสตร์">คณิตศาสตร์</option><option value="วิทยาศาสตร์และเทคโนโลยี">วิทยาศาสตร์และเทคโนโลยี</option><option value="สังคมศึกษา ศาสนาและวัฒนธรรม">สังคมศึกษา ศาสนาและวัฒนธรรม</option><option value="สุขศึกษาและพลศึกษา">สุขศึกษาและพลศึกษา</option><option value="ศิลปะ">ศิลปะ</option><option value="การงานอาชีพ">การงานอาชีพ</option><option value="ภาษาต่างประเทศ">ภาษาต่างประเทศ</option>
+                                            <option value="">-- เลือกกลุ่มสาระ --</option><option value="ภาษาไทย">ภาษาไทย</option><option value="คณิตศาสตร์">คณิตศาสตร์</option><option value="วิทยาศาสตร์และเทคโนโลยี">วิทยาศาสตร์และเทคโนโลยี</option><option value="สังคมศึกษา ศาสนา และวัฒนธรรม">สังคมศึกษา ศาสนา และวัฒนธรรม</option><option value="สุขศึกษาและพลศึกษา">สุขศึกษาและพลศึกษา</option><option value="ศิลปะ">ศิลปะ</option><option value="การงานอาชีพ">การงานอาชีพ</option><option value="ภาษาต่างประเทศ">ภาษาต่างประเทศ</option>
                                         </select>
                                     </div>
                                     <div class="space-y-1">
@@ -2353,7 +2353,7 @@
                                         <label class="text-[10px] font-bold text-indigo-700">กลุ่มสาระ</label>
                                         <!-- 💡 เพิ่ม onchange ปิดกล่องล็อกเป้าเวลากดเปลี่ยนหมวด -->
                                         <select id="genDept" onchange="document.getElementById('manualLockPanel')?.classList.add('hidden')" class="w-full text-xs font-bold text-gray-700 p-2.5 border border-gray-300 rounded-lg outline-none focus:border-indigo-500 bg-white shadow-sm">
-                                            <option value="">-- เลือกหมวด --</option><option value="ภาษาไทย">ภาษาไทย</option><option value="คณิตศาสตร์">คณิตศาสตร์</option><option value="วิทยาศาสตร์และเทคโนโลยี">วิทยาศาสตร์และเทคโนโลยี</option><option value="สังคมศึกษา ศาสนาและวัฒนธรรม">สังคมศึกษา ศาสนาและวัฒนธรรม</option><option value="สุขศึกษาและพลศึกษา">สุขศึกษาและพลศึกษา</option><option value="ศิลปะ">ศิลปะ</option><option value="การงานอาชีพ">การงานอาชีพ</option><option value="ภาษาต่างประเทศ">ภาษาต่างประเทศ</option>
+                                            <option value="">-- เลือกหมวด --</option><option value="ภาษาไทย">ภาษาไทย</option><option value="คณิตศาสตร์">คณิตศาสตร์</option><option value="วิทยาศาสตร์และเทคโนโลยี">วิทยาศาสตร์และเทคโนโลยี</option><option value="สังคมศึกษา ศาสนา และวัฒนธรรม">สังคมศึกษา ศาสนา และวัฒนธรรม</option><option value="สุขศึกษาและพลศึกษา">สุขศึกษาและพลศึกษา</option><option value="ศิลปะ">ศิลปะ</option><option value="การงานอาชีพ">การงานอาชีพ</option><option value="ภาษาต่างประเทศ">ภาษาต่างประเทศ</option>
                                         </select>
                                     </div>
                                     <button onclick="generateTypeBSchedule()" class="bg-indigo-600 text-white px-5 py-2.5 rounded-lg text-sm font-black shadow-md hover:bg-indigo-700 transition-colors flex items-center justify-center gap-1 w-full lg:w-auto h-[38px]">
@@ -11405,7 +11405,7 @@ window.deleteLog = function(logId) {
                     return r.includes('DepDir') || r.includes('HOA') || r.includes('AsstDir') || r.includes('Director') || r.includes('EmpPngn');
                 });
                 
-                const depts = ["ภาษาไทย", "คณิตศาสตร์", "วิทยาศาสตร์และเทคโนโลยี", "สังคมศึกษา ศาสนาและวัฒนธรรม", "สุขศึกษาและพลศึกษา", "ศิลปะ", "การงานอาชีพ", "ภาษาต่างประเทศ"];
+                const depts = ["ภาษาไทย", "คณิตศาสตร์", "วิทยาศาสตร์และเทคโนโลยี", "สังคมศึกษา ศาสนา และวัฒนธรรม", "สุขศึกษาและพลศึกษา", "ศิลปะ", "การงานอาชีพ", "ภาษาต่างประเทศ"];
                 let rowsHtml = '';
                 
                 // 3. วาด Dropdown
@@ -11480,7 +11480,7 @@ window.deleteLog = function(logId) {
             btn.innerHTML = '<div class="loader loader-white mr-1 border-2 inline-block align-middle w-3 h-3"></div> กำลังบันทึก...';
             btn.disabled = true;
 
-            const depts = ["ภาษาไทย", "คณิตศาสตร์", "วิทยาศาสตร์และเทคโนโลยี", "สังคมศึกษา ศาสนาและวัฒนธรรม", "สุขศึกษาและพลศึกษา", "ศิลปะ", "การงานอาชีพ", "ภาษาต่างประเทศ"];
+            const depts = ["ภาษาไทย", "คณิตศาสตร์", "วิทยาศาสตร์และเทคโนโลยี", "สังคมศึกษา ศาสนา และวัฒนธรรม", "สุขศึกษาและพลศึกษา", "ศิลปะ", "การงานอาชีพ", "ภาษาต่างประเทศ"];
             let savedChairs = {};
             
             // ดึงค่าจากหน้าจอทั้งหมด
@@ -11518,7 +11518,7 @@ window.deleteLog = function(logId) {
             btn.innerHTML = '<div class="loader loader-white mr-1 border-2 inline-block align-middle w-3 h-3"></div> กำลังบันทึก...';
             btn.disabled = true;
 
-            const depts = ["ภาษาไทย", "คณิตศาสตร์", "วิทยาศาสตร์และเทคโนโลยี", "สังคมศึกษา ศาสนาและวัฒนธรรม", "สุขศึกษาและพลศึกษา", "ศิลปะ", "การงานอาชีพ", "ภาษาต่างประเทศ"];
+            const depts = ["ภาษาไทย", "คณิตศาสตร์", "วิทยาศาสตร์และเทคโนโลยี", "สังคมศึกษา ศาสนา และวัฒนธรรม", "สุขศึกษาและพลศึกษา", "ศิลปะ", "การงานอาชีพ", "ภาษาต่างประเทศ"];
             let savedChairs = {};
             
             // ดึงค่าจากหน้าจอ
@@ -20796,7 +20796,7 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
             committeeBox.classList.add('hidden'); // ซ่อนกรรมการไว้ก่อน รอเลือกคาบ
         };
         // ==========================================
-        // 👑 สมองกลตรวจเช็คคาบว่าง VIP (V.Smart Fallback อัจฉริยะ)
+        // 👑 สมองกลตรวจเช็คคาบว่าง VIP (V.Smart Fallback + 🛡️ กรองคน Inactive ออก)
         // ==========================================
         window.checkHodVipFreeSlots = function() {
             if (!window.currentVipHod) return;
@@ -20810,6 +20810,9 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
                 return;
             }
 
+            // 💡 [NEW LOGIC] เครื่องกรองผี! คัดเอาเฉพาะคนที่ยังมีชีวิตอยู่ (ไม่ถูก Inactive หรือ ระงับการใช้งาน)
+            const activeUsersOnly = usersDB_Global.filter(u => u.Status !== 'Inactive' && u.Status !== 'ระงับการใช้งาน');
+
             const dateStr = new Date(dateVal).toISOString().split('T')[0];
             const checkDate = new Date(dateVal);
             const dayName = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"][checkDate.getDay()];
@@ -20818,14 +20821,14 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
             const savedChairs = JSON.parse(localStorage.getItem('typeB_chairs') || "{}");
             const teamLeader = savedChairs[dept] || "";
 
-            // 2. ดึงรายชื่อทีมบริหารทั้งหมด + ตัวเอง (หัวหน้างานนิเทศ)
-            let allExecs = usersDB_Global.filter(u => {
+            // 2. ดึงรายชื่อทีมบริหารทั้งหมด + ตัวเอง (ใช้ activeUsersOnly แทน usersDB_Global)
+            let allExecs = activeUsersOnly.filter(u => {
                 const r = u.Role || "";
                 return r.includes('DepDir') || r.includes('HOA') || r.includes('AsstDir') || r.includes('Director') || r.includes('EmpPngn') || u.FullName === currentUser.FullName;
             });
             allExecs = Array.from(new Map(allExecs.map(item => [item.FullName, item])).values());
 
-            const deptTeachers = usersDB_Global.filter(u => u.Department === dept && (!u.Role.includes('BirdSpy') || u.Role.includes('User')));
+            const deptTeachers = activeUsersOnly.filter(u => u.Department === dept && (!u.Role.includes('BirdSpy') || u.Role.includes('User')));
             const reqSq = parseInt(window.currentVipHod.Sq) || 999;
 
             const isFree = (tName) => {
@@ -20836,10 +20839,10 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
                 return !busySup;
             };
 
-            // 💡 [NEW LOGIC] ค้นหากลุ่ม PLC ของผู้รับการนิเทศ เพื่อเอาไปทำ Fallback
+            // 💡 ค้นหากลุ่ม PLC ของผู้รับการนิเทศ
             let plcMembers = [];
             if (typeof plcGroupsDB_Global !== 'undefined') {
-                const tObj = usersDB_Global.find(u=>u.FullName === window.currentVipHod.FullName);
+                const tObj = activeUsersOnly.find(u=>u.FullName === window.currentVipHod.FullName);
                 if(tObj) {
                     const tVals = Object.values(tObj);
                     const tPlc = plcGroupsDB_Global.find(plc => {
@@ -20849,15 +20852,15 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
                     if(tPlc) {
                         try {
                             const mIds = JSON.parse(tPlc.Members);
-                            plcMembers = usersDB_Global.filter(u => { const uVals = Object.values(u); return mIds.some(mId => uVals.includes(mId)); }).map(u => u.FullName);
+                            plcMembers = activeUsersOnly.filter(u => { const uVals = Object.values(u); return mIds.some(mId => uVals.includes(mId)); }).map(u => u.FullName);
                         } catch(e){}
                     }
                 }
             }
 
-            // 💡 [NEW LOGIC] สมองกล Smart Fallback (รวมมิตรคนว่างจัดกลุ่ม 3 ระดับ เรียงตาม Sq)
+            // 💡 สมองกล Smart Fallback (รวมมิตรคนว่างจัดกลุ่ม 3 ระดับ)
             const getSmartFallbackHtml = () => {
-                let allFreeTeachers = usersDB_Global.filter(u => u.FullName !== window.currentVipHod.FullName && u.FullName !== teamLeader && isFree(u.FullName) && (!u.Role.includes('BirdSpy') || u.Role.includes('User')));
+                let allFreeTeachers = activeUsersOnly.filter(u => u.FullName !== window.currentVipHod.FullName && u.FullName !== teamLeader && isFree(u.FullName) && (!u.Role.includes('BirdSpy') || u.Role.includes('User')));
                 allFreeTeachers.sort((a, b) => (parseInt(a.Sq) || 999) - (parseInt(b.Sq) || 999));
 
                 let grpVIP = []; let grpPLC = []; let grpOther = [];
@@ -20925,7 +20928,7 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
                 sqHigherSame.forEach(u => { sup2Html += `<option value="${u.FullName}">${u.FullName}</option>`; });
                 sup2Html += `</optgroup>`;
             } else {
-                sup2Html += getSmartFallbackHtml(); // 💡 เสียบ Fallback อัจฉริยะตรงนี้!
+                sup2Html += getSmartFallbackHtml(); 
             }
             document.getElementById('vipHodSup2').innerHTML = sup2Html;
             if(sqHigherSame.length > 0) document.getElementById('vipHodSup2').value = sqHigherSame[0].FullName;
@@ -20933,8 +20936,8 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
             // 📝 วาด SLOT 3 (ใช้ Smart Fallback หากไม่มีคนเข้าเกณฑ์)
             let sup3Html = `<option value="">-- ว่าง (เลือกเอง) --</option>`;
             
-            let plcM = usersDB_Global.filter(u => plcMembers.includes(u.FullName) && u.FullName !== window.currentVipHod.FullName && u.FullName !== teamLeader && isFree(u.FullName));
-            let sqDiff = usersDB_Global.filter(u => u.Department !== dept && u.FullName !== window.currentVipHod.FullName && u.FullName !== teamLeader && (parseInt(u.Sq)||999) < reqSq && isFree(u.FullName));
+            let plcM = activeUsersOnly.filter(u => plcMembers.includes(u.FullName) && u.FullName !== window.currentVipHod.FullName && u.FullName !== teamLeader && isFree(u.FullName));
+            let sqDiff = activeUsersOnly.filter(u => u.Department !== dept && u.FullName !== window.currentVipHod.FullName && u.FullName !== teamLeader && (parseInt(u.Sq)||999) < reqSq && isFree(u.FullName));
             
             let hasPrimarySlot3 = false;
             if (plcM.length > 0) {
@@ -20957,7 +20960,7 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
             }
 
             if (!hasPrimarySlot3) {
-                sup3Html += getSmartFallbackHtml(); // 💡 เสียบ Fallback อัจฉริยะตรงนี้เหมือนกัน!
+                sup3Html += getSmartFallbackHtml(); 
             }
             document.getElementById('vipHodSup3').innerHTML = sup3Html;
             
