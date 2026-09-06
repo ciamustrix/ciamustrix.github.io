@@ -254,7 +254,7 @@
             
             <div class="mt-8 text-center border-t border-gray-200/50 pt-4">
                 <p class="text-xs text-gray-500 font-medium mb-1">โรงเรียนวังตะเคียนวิทยาคม | ฝ่ายบริหารงานวิชาการ</p>
-                <p class="text-[10px] text-sky-700/60 font-bold tracking-wide">V 1.03.04.09 [Sep 4th, 2025 - 04:09] | TESTING-f(Sv)</p>
+                <p class="text-[10px] text-sky-700/60 font-bold tracking-wide">V 1.03.04.09 [Sep 4th, 2026 - 04:09] | TESTING-f(Sv)</p>
                 <p class="text-xs text-gray-500 font-medium mb-1">Dev. by Thuntathorn 😁 | Dedicated to #IWreal and JLT</p>
             </div>
         </div>
@@ -20796,7 +20796,7 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
             committeeBox.classList.add('hidden'); // ซ่อนกรรมการไว้ก่อน รอเลือกคาบ
         };
         // ==========================================
-        // 👑 สมองกลตรวจเช็คคาบว่าง VIP (V.Dropdown ประธานครอบจักรวาล)
+        // 👑 สมองกลตรวจเช็คคาบว่าง VIP (V.Smart Fallback อัจฉริยะ)
         // ==========================================
         window.checkHodVipFreeSlots = function() {
             if (!window.currentVipHod) return;
@@ -20836,7 +20836,62 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
                 return !busySup;
             };
 
-            // 👑 วาด SLOT 1 (ประธาน/ตัวสำรอง) อัจฉริยะ!
+            // 💡 [NEW LOGIC] ค้นหากลุ่ม PLC ของผู้รับการนิเทศ เพื่อเอาไปทำ Fallback
+            let plcMembers = [];
+            if (typeof plcGroupsDB_Global !== 'undefined') {
+                const tObj = usersDB_Global.find(u=>u.FullName === window.currentVipHod.FullName);
+                if(tObj) {
+                    const tVals = Object.values(tObj);
+                    const tPlc = plcGroupsDB_Global.find(plc => {
+                        if(!plc.Members) return false;
+                        try { return JSON.parse(plc.Members).some(mId => tVals.includes(mId)); } catch(e){return false;}
+                    });
+                    if(tPlc) {
+                        try {
+                            const mIds = JSON.parse(tPlc.Members);
+                            plcMembers = usersDB_Global.filter(u => { const uVals = Object.values(u); return mIds.some(mId => uVals.includes(mId)); }).map(u => u.FullName);
+                        } catch(e){}
+                    }
+                }
+            }
+
+            // 💡 [NEW LOGIC] สมองกล Smart Fallback (รวมมิตรคนว่างจัดกลุ่ม 3 ระดับ เรียงตาม Sq)
+            const getSmartFallbackHtml = () => {
+                let allFreeTeachers = usersDB_Global.filter(u => u.FullName !== window.currentVipHod.FullName && u.FullName !== teamLeader && isFree(u.FullName) && (!u.Role.includes('BirdSpy') || u.Role.includes('User')));
+                allFreeTeachers.sort((a, b) => (parseInt(a.Sq) || 999) - (parseInt(b.Sq) || 999));
+
+                let grpVIP = []; let grpPLC = []; let grpOther = [];
+                
+                allFreeTeachers.forEach(u => {
+                    const r = u.Role || "";
+                    const isVIP = r.includes('DepDir') || r.includes('HOA') || r.includes('HOD') || r.includes('AsstDir') || r.includes('Director') || r.includes('EmpPngn');
+                    const isPLC = plcMembers.includes(u.FullName);
+
+                    if (isVIP) grpVIP.push(u);
+                    else if (isPLC) grpPLC.push(u);
+                    else grpOther.push(u);
+                });
+
+                let html = "";
+                if (grpVIP.length > 0) {
+                    html += `<optgroup label="👑 ผู้บริหาร/หัวหน้างาน (ว่าง)">`;
+                    grpVIP.forEach(u => html += `<option value="${u.FullName}">${u.FullName} [${u.Department.substring(0,3)}]</option>`);
+                    html += `</optgroup>`;
+                }
+                if (grpPLC.length > 0) {
+                    html += `<optgroup label="🤝 ครูในกลุ่ม PLC เดียวกัน (ว่าง)">`;
+                    grpPLC.forEach(u => html += `<option value="${u.FullName}">${u.FullName} [${u.Department.substring(0,3)}]</option>`);
+                    html += `</optgroup>`;
+                }
+                if (grpOther.length > 0) {
+                    html += `<optgroup label="👥 ครูท่านอื่นๆ ที่ว่าง (เรียงตาม Sq)">`;
+                    grpOther.forEach(u => html += `<option value="${u.FullName}">${u.FullName} [${u.Department.substring(0,3)}]</option>`);
+                    html += `</optgroup>`;
+                }
+                return html;
+            };
+
+            // 👑 วาด SLOT 1 (ประธาน/ตัวสำรอง)
             let sup1Html = '';
             let defaultChair = teamLeader;
             if (!isFree(teamLeader)) {
@@ -20861,62 +20916,49 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
             }
             document.getElementById('vipHodSup1').innerHTML = sup1Html || '<option value="">-- ไม่มีผู้บริหารว่าง --</option>';
 
-            // 📝 วาด SLOT 2
+            // 📝 วาด SLOT 2 (ใช้ Smart Fallback หากไม่มีคนเข้าเกณฑ์)
             let sup2Html = `<option value="">-- ว่าง (เลือกเอง) --</option>`;
             let sqHigherSame = deptTeachers.filter(u => u.FullName !== window.currentVipHod.FullName && u.FullName !== teamLeader && (parseInt(u.Sq)||999) < reqSq && isFree(u.FullName));
+            
             if (sqHigherSame.length > 0) {
                 sup2Html += `<optgroup label="✅ Sq สูงกว่าหัวหน้าหมวด">`;
                 sqHigherSame.forEach(u => { sup2Html += `<option value="${u.FullName}">${u.FullName}</option>`; });
                 sup2Html += `</optgroup>`;
-            }
-            const othersSameDept = deptTeachers.filter(u => u.FullName !== window.currentVipHod.FullName && u.FullName !== teamLeader && !sqHigherSame.some(sq => sq.FullName === u.FullName) && isFree(u.FullName));
-            if (othersSameDept.length > 0) {
-                 sup2Html += `<optgroup label="👥 ครูในหมวดที่ว่าง">`;
-                 othersSameDept.forEach(u => { sup2Html += `<option value="${u.FullName}">${u.FullName}</option>`; });
-                 sup2Html += `</optgroup>`;
+            } else {
+                sup2Html += getSmartFallbackHtml(); // 💡 เสียบ Fallback อัจฉริยะตรงนี้!
             }
             document.getElementById('vipHodSup2').innerHTML = sup2Html;
             if(sqHigherSame.length > 0) document.getElementById('vipHodSup2').value = sqHigherSame[0].FullName;
 
-            // 📝 วาด SLOT 3
+            // 📝 วาด SLOT 3 (ใช้ Smart Fallback หากไม่มีคนเข้าเกณฑ์)
             let sup3Html = `<option value="">-- ว่าง (เลือกเอง) --</option>`;
             
-            let plcM = [];
-            if (typeof plcGroupsDB_Global !== 'undefined') {
-                const tObj = usersDB_Global.find(u=>u.FullName === window.currentVipHod.FullName);
-                if(tObj) {
-                    const tVals = Object.values(tObj);
-                    const tPlc = plcGroupsDB_Global.find(plc => {
-                        if(!plc.Members) return false;
-                        try { return JSON.parse(plc.Members).some(mId => tVals.includes(mId)); } catch(e){return false;}
-                    });
-                    if(tPlc) {
-                        try {
-                            const mIds = JSON.parse(tPlc.Members);
-                            plcM = usersDB_Global.filter(u => { const uVals = Object.values(u); return mIds.some(mId => uVals.includes(mId)) && u.FullName !== window.currentVipHod.FullName && u.FullName !== teamLeader && isFree(u.FullName); });
-                        } catch(e){}
-                    }
-                }
-            }
-
+            let plcM = usersDB_Global.filter(u => plcMembers.includes(u.FullName) && u.FullName !== window.currentVipHod.FullName && u.FullName !== teamLeader && isFree(u.FullName));
             let sqDiff = usersDB_Global.filter(u => u.Department !== dept && u.FullName !== window.currentVipHod.FullName && u.FullName !== teamLeader && (parseInt(u.Sq)||999) < reqSq && isFree(u.FullName));
             
+            let hasPrimarySlot3 = false;
             if (plcM.length > 0) {
                 sup3Html += `<optgroup label="🤝 กลุ่ม PLC เดียวกัน">`;
                 plcM.forEach(u => { sup3Html += `<option value="${u.FullName}">${u.FullName}</option>`; });
                 sup3Html += `</optgroup>`;
+                hasPrimarySlot3 = true;
             }
             if (sqHigherSame.length > 0) {
                 sup3Html += `<optgroup label="✅ Sq สูงกว่า (สาระเดียวกัน)">`;
                 sqHigherSame.forEach(u => { sup3Html += `<option value="${u.FullName}">${u.FullName}</option>`; });
                 sup3Html += `</optgroup>`;
+                hasPrimarySlot3 = true;
             }
             if (sqDiff.length > 0) {
                 sup3Html += `<optgroup label="🌐 Sq สูงกว่า (ต่างสาระ)">`;
                 sqDiff.forEach(u => { sup3Html += `<option value="${u.FullName}">${u.FullName} [${u.Department.substring(0,3)}]</option>`; });
                 sup3Html += `</optgroup>`;
+                hasPrimarySlot3 = true;
             }
 
+            if (!hasPrimarySlot3) {
+                sup3Html += getSmartFallbackHtml(); // 💡 เสียบ Fallback อัจฉริยะตรงนี้เหมือนกัน!
+            }
             document.getElementById('vipHodSup3').innerHTML = sup3Html;
             
             // Auto Select หลบกันเองของ SLOT 3
