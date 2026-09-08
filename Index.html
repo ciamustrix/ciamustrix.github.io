@@ -254,7 +254,7 @@
             
             <div class="mt-8 text-center border-t border-gray-200/50 pt-4">
                 <p class="text-xs text-gray-500 font-medium mb-1">โรงเรียนวังตะเคียนวิทยาคม | ฝ่ายบริหารงานวิชาการ</p>
-                <p class="text-[10px] text-sky-700/60 font-bold tracking-wide">V 1.03.04.09 [Sep 4th, 2026 - 04:09:03] | TESTING-f(Sv)</p>
+                <p class="text-[10px] text-sky-700/60 font-bold tracking-wide">V 1.03.04.09 [Sep 4th, 2026 - 04:09:01] | TESTING-f(Sv)</p>
                 <p class="text-xs text-gray-500 font-medium mb-1">Dev. by Thuntathorn 😁 | Dedicated to #IWreal and JLT</p>
             </div>
         </div>
@@ -3521,6 +3521,29 @@
                                         <button type="button" onclick="clearSignature('sigCanvasSaved')" class="text-xs text-rose-500 hover:text-rose-700 font-bold bg-white px-3 py-1.5 rounded-md border border-rose-100 shadow-sm transition-colors shrink-0">ล้างกระดาน</button>
                                     </div>
                                 </div>
+                                <!-- 🤖 โซนตั้งค่า Gemini API Key (ทำงานบน LocalStorage) -->
+<div class="mt-6 p-5 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl border border-indigo-100 shadow-sm relative overflow-hidden">
+    <div class="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
+    <div class="flex items-start gap-3">
+        <div class="text-2xl mt-1">✨</div>
+        <div class="w-full">
+            <h4 class="font-black text-indigo-900 mb-1 text-sm">ตั้งค่าการประมวลผล AI (Gemini API Key)</h4>
+            <p class="text-[10px] text-indigo-700/70 mb-3 font-bold leading-relaxed">
+                ระบบใช้ API ของแต่ละบุคคลเพื่อป้องกันการจำกัดโควตา (BYOK) <br>
+                <span class="text-rose-500 font-black">คีย์นี้จะถูกเก็บไว้ใน "อุปกรณ์เครื่องนี้" เท่านั้น ปลอดภัย 100% ไม่ถูกส่งขึ้นฐานข้อมูลส่วนกลาง</span>
+            </p>
+            <div class="flex flex-col sm:flex-row gap-2">
+                <input type="password" id="profileGeminiKeyInput" placeholder="วาง API Key ของคุณที่นี่..." class="flex-1 px-3 py-2 rounded-lg border border-indigo-200 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-xs font-mono shadow-inner bg-white">
+                <button type="button" onclick="saveGeminiKeyToLocal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors shadow flex items-center justify-center gap-1">
+                    💾 บันทึกลงเครื่อง
+                </button>
+            </div>
+            <div class="mt-2 text-right">
+                 <button type="button" onclick="clearGeminiKeyFromLocal()" class="text-[10px] text-rose-500 font-bold hover:text-rose-700 underline underline-offset-2">🗑️ ล้างคีย์ออกจากเครื่อง</button>
+            </div>
+        </div>
+    </div>
+</div>
                             </div>
                         </div>
 
@@ -5433,7 +5456,7 @@ const targetStr = tDate.getFullYear() + '-' + String(tDate.getMonth() + 1).padSt
 
             const imgPrev = document.getElementById('settingProfileImgPreview');
             if(imgPrev) {
-                const fallbackUrl = "[https://ui-avatars.com/api/?name=](https://ui-avatars.com/api/?name=)" + 
+                const fallbackUrl = "https://ui-avatars.com/api/?name=" + 
                                    encodeURIComponent(currentUser.NickName || "User") + 
                                    "&background=0ea5e9&color=fff";
                 imgPrev.src = currentUser.ProfileImage ? getEmbeddableUrl(currentUser.ProfileImage) : fallbackUrl;
@@ -5460,6 +5483,9 @@ const targetStr = tDate.getFullYear() + '-' + String(tDate.getMonth() + 1).padSt
             /// 💡 โหลด Telegram ID ปัจจุบันมาแสดง
             const tgId = document.getElementById('settingTelegramID');
             if(tgId) tgId.value = currentUser.TelegramID || '';
+
+            // 🤖 โหลด Gemini API Key ปัจจุบันจากเครื่องมาแสดง
+            if(typeof loadGeminiKeyToInput === 'function') loadGeminiKeyToInput();
 
             const passError = document.getElementById('passErrorMsg');
             if(passError) passError.classList.add('hidden');
@@ -5592,6 +5618,48 @@ const targetStr = tDate.getFullYear() + '-' + String(tDate.getMonth() + 1).padSt
                 btn.innerHTML = origTxt; btn.disabled = false;
             }
         };
+        // ==========================================
+// 🤖 ฟังก์ชันจัดการ BYOK (Bring Your Own Key) สำหรับ Gemini
+// ==========================================
+
+// 1. ดึงคีย์มาโชว์ตอนเปิดหน้าโปรไฟล์ (เรียกฟังก์ชันนี้ตอนเปิดหน้าต่างโปรไฟล์นะ!)
+window.loadGeminiKeyToInput = function() {
+    const inputEl = document.getElementById('profileGeminiKeyInput');
+    if (inputEl) {
+        const savedKey = localStorage.getItem('my_gemini_api_key');
+        inputEl.value = savedKey || "";
+    }
+};
+
+// 2. บันทึกคีย์ลงเครื่อง
+window.saveGeminiKeyToLocal = function() {
+    const keyVal = document.getElementById('profileGeminiKeyInput').value.trim();
+    if (!keyVal) {
+        return typeof customAlert === 'function' ? customAlert("กรุณากรอก API Key ก่อนบันทึกครับ", "warning") : alert("กรอก Key ก่อนครับ");
+    }
+    
+    // ตรวจสอบแพทเทิร์นเบื้องต้น (Gemini Key มักจะขึ้นต้นด้วย 'AIza')
+    if (!keyVal.startsWith("AIza")) {
+         customConfirm("⚠️ API Key ปกติจะขึ้นต้นด้วย 'AIza' คีย์นี้ดูแปลกๆ คุณต้องการบันทึกต่อไปหรือไม่?", () => {
+             localStorage.setItem('my_gemini_api_key', keyVal);
+             typeof customAlert === 'function' ? customAlert("✨ บันทึก API Key ลงเครื่องเรียบร้อยแล้ว!", "success") : alert("บันทึกสำเร็จ!");
+         });
+         return;
+    }
+
+    localStorage.setItem('my_gemini_api_key', keyVal);
+    typeof customAlert === 'function' ? customAlert("✨ บันทึก API Key ลงเครื่องเรียบร้อยแล้ว!", "success") : alert("บันทึกสำเร็จ!");
+};
+
+// 3. ลบคีย์ทิ้ง
+window.clearGeminiKeyFromLocal = function() {
+    customConfirm("🗑️ ยืนยันการลบ API Key ออกจากอุปกรณ์เครื่องนี้?", () => {
+        localStorage.removeItem('my_gemini_api_key');
+        const inputEl = document.getElementById('profileGeminiKeyInput');
+        if (inputEl) inputEl.value = "";
+        typeof customAlert === 'function' ? customAlert("ล้าง API Key เรียบร้อยแล้วครับ", "info") : alert("ล้างคีย์แล้ว!");
+    });
+};
         window.populateAdminUserList = function() {
             const selectAdmin = document.getElementById('adminUserSelect');
             const selectImp = document.getElementById('impersonateUserSelect');
@@ -19478,43 +19546,112 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
             if(scoreEl) scoreEl.innerText = total;
         };
 
-        // 🤖 ฟังก์ชัน AI ช่วยวิเคราะห์ผล (คำนวณจากคะแนนดิบ)
-        window.generateAISupervisionSummary = function() {
+        // 🤖 ฟังก์ชัน AI ช่วยวิเคราะห์ผล (อัปเกรด V. BYOK ดึง Key จาก LocalStorage)
+        window.generateAISupervisionSummary = async function() {
+            // 1. 🔑 ตรวจสอบ API Key ในเครื่อง
+            let apiKey = localStorage.getItem('my_gemini_api_key');
+            if (!apiKey) {
+                apiKey = prompt("🔑 กรุณาใส่ Gemini API Key ของคุณเพื่อใช้งาน AI วิเคราะห์ผล:\n(API Key จะถูกเก็บไว้ในเครื่องของคุณเท่านั้น ไม่มีใครเห็นข้อมูลนี้)");
+                if (!apiKey) return typeof customAlert === 'function' ? customAlert("คุณต้องใส่ API Key เพื่อใช้งานฟังก์ชันนี้ครับ", "warning") : alert("ต้องใส่ API Key ก่อนครับ");
+                localStorage.setItem('my_gemini_api_key', apiKey);
+            }
+
             const radiosChecked = document.querySelectorAll('#dynamicEvaluationFormContainer input[type="radio"]:checked');
             const totalGroups = document.querySelectorAll('#dynamicEvaluationFormContainer .rubric-radios').length;
             
             if(radiosChecked.length < totalGroups && totalGroups > 0) {
-                customAlert("⚠️ กรุณาประเมินให้ครบทุกข้อก่อนให้ AI ช่วยสรุปผลครับ", "warning");
-                return;
+                return typeof customAlert === 'function' ? customAlert("⚠️ กรุณาประเมินและให้คะแนนให้ครบทุกข้อก่อนให้ AI ช่วยสรุปผลครับ", "warning") : alert("ให้คะแนนไม่ครบ");
             }
 
-            customAlert("🤖 AI กำลังวิเคราะห์ผลคะแนนเพื่อเขียนสรุป...", "success");
-            
-            setTimeout(() => {
-                const totalScoreEl = document.getElementById('sup_total_score');
-                const total = totalScoreEl ? parseInt(totalScoreEl.innerText) : 0;
-                const percent = totalGroups > 0 ? (total / (totalGroups * 5)) * 100 : 0;
-                
-                let str = "ครูผู้สอนมีความตั้งใจในการจัดการเรียนรู้ สื่อสารได้ชัดเจน และควบคุมชั้นเรียนได้ดี";
-                let weak = "การบริหารเวลาในบางช่วงอาจยังไม่กระชับ และควรเพิ่มการมีส่วนร่วมของนักเรียนให้มากขึ้น";
-                let dev = "ควรปรับเวลาการทำกิจกรรมให้สั้นลง และเพิ่มคำถามกระตุ้นคิด (Active Learning) ให้กระจายทั่วถึงทั้งห้อง";
+            // 2. 🧹 กวาดคะแนนจากหน้าจอมาปั้นเป็นวัตถุดิบ
+            let scoreDataText = "";
+            let totalScore = 0;
+            let maxScore = 0;
+            const categoryDivs = document.querySelectorAll('#dynamicEvaluationFormContainer > div.mb-6');
 
-                if (percent >= 85) {
-                    str = "การจัดกิจกรรมทำได้อย่างยอดเยี่ยม สื่อการสอนมีความน่าสนใจ ดึงดูดความสนใจของผู้เรียนได้ตลอดคาบ และบรรลุวัตถุประสงค์การเรียนรู้ครบถ้วน";
-                    weak = "พบจุดที่ต้องพัฒนาเพียงเล็กน้อย เช่น การขยายประเด็นคำถามเชิงลึก (Higher-order thinking) ในบางจังหวะ";
-                    dev = "สามารถต่อยอดโดยการให้ผู้เรียนเป็นผู้นำในการตั้งคำถาม สรุปบทเรียนด้วยตนเอง และประยุกต์ใช้ความรู้กับสถานการณ์จริง";
-                } else if (percent < 65) {
-                    str = "ครูผู้สอนมีการเตรียมความพร้อมเบื้องต้นได้ดี เนื้อหามีความถูกต้องตามหลักสูตร และมีบุคลิกภาพที่ดีในการสอน";
-                    weak = "ยังขาดการใช้สื่อที่น่าสนใจ รูปแบบการสอนยังเน้นการบรรยายเป็นหลัก (Teacher-centered) และขาดการประเมินผลระหว่างเรียน";
-                    dev = "ควรปรับรูปแบบเป็น Active Learning ให้ผู้เรียนได้ลงมือปฏิบัติจริง ใช้สื่อเทคโนโลยีเข้ามาช่วย และเพิ่มการประเมินผลย่อยเพื่อเช็คความเข้าใจ";
+            categoryDivs.forEach((catDiv, cIdx) => {
+                const catName = catDiv.querySelector('h5').innerText.replace(/^[0-9]+\s/, '').trim();
+                scoreDataText += `หมวด: ${catName}\n`;
+                
+                const itemRows = catDiv.querySelectorAll('.flex.flex-col.xl\\:flex-row');
+                itemRows.forEach((row, iIdx) => {
+                    const itemName = row.querySelector('.flex-1').innerText.trim();
+                    const checkedRadio = row.querySelector(`input[name="rubric_${cIdx}_${iIdx}"]:checked`);
+                    const score = checkedRadio ? parseInt(checkedRadio.value) : 0;
+                    scoreDataText += `- ${itemName}: ได้ ${score}/5 คะแนน\n`;
+                    totalScore += score;
+                    maxScore += 5;
+                });
+                scoreDataText += "\n";
+            });
+
+            // 3. 📜 ปั้น Prompt ระดับมหาเทพ (ตามสูตร INTJ ของแก)
+            const promptText = `
+คุณคือผู้เชี่ยวชาญด้านการจัดการเรียนรู้เชิงรุก (Active Learning) ระดับสูง และเป็นศึกษานิเทศก์ผู้วางมาตรฐานวิชาชีพครู
+จงวิเคราะห์คะแนนการประเมินการสอนต่อไปนี้ (คะแนนที่ทำได้ ${totalScore} จากคะแนนเต็ม ${maxScore}):
+
+ข้อมูลการประเมินรายข้อ:
+${scoreDataText}
+
+เงื่อนไขการเขียน (ต้องใช้ภาษาทางการแบบนักวิชาการ):
+1. หากได้คะแนนเต็มทุกข้อ (หรือเกือบเต็ม): ให้เขียนคำชื่นชมและให้กำลังใจอย่างเป็นทางการ และเสนอแนะแนวทางต่อยอดสู่การเป็นครูต้นแบบ (Best Practice) หรือการยกระดับวิทยฐานะ
+2. หากมีข้อที่ถูกหักคะแนน: ให้วิเคราะห์จุดเด่นจากข้อที่ได้คะแนนสูง และเสนอแนะจุดควรพัฒนาจากข้อที่ได้คะแนนต่ำ โดยต้องระบุ "เทคนิค วิธีการ หรือรูปแบบการจัดการเรียนรู้" ที่เป็นรูปธรรมและเหมาะสมกับประเด็นนั้นเพื่อนำไปปรับใช้
+3. จงตอบกลับมาเป็น JSON Format ที่มีโครงสร้างเป๊ะๆ ดังนี้เท่านั้น ห้ามมีข้อความอื่นๆ ปะปน:
+{
+  "strength": "จุดเด่นของการจัดการเรียนรู้...",
+  "weakness": "จุดที่ควรพัฒนา...",
+  "development": "แนวทางพัฒนาและต่อยอดสู่มาตรฐานวิชาชีพที่สูงขึ้น..."
+}
+`;
+
+            const btn = window.event ? window.event.currentTarget : null;
+            const origTxt = btn ? btn.innerHTML : "✨ AI ช่วยวิเคราะห์และสรุปผล";
+            if (btn) { btn.innerHTML = '<div class="loader loader-white mr-2 border-2 inline-block align-middle"></div> AI กำลังคิดวิเคราะห์...'; btn.disabled = true; }
+
+            try {
+                // 4. 🚀 ยิงตรงเข้า API ของ Gemini โหมด JSON
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: promptText }] }],
+                        generationConfig: { response_mime_type: "application/json" } // บังคับให้ AI ตอบเป็น JSON เท่านั้น
+                    })
+                });
+
+                const result = await response.json();
+                
+                // ดักจับกรณี API Key พังหรือหมดโควต้า
+                if (result.error) {
+                    if (result.error.code === 400 && result.error.message.includes("API key")) {
+                        localStorage.removeItem('my_gemini_api_key'); // ลบ Key เก่าทิ้งทันที
+                        throw new Error("API Key ไม่ถูกต้อง กรุณากดปุ่มเพื่อใส่ Key ใหม่อีกครั้ง");
+                    }
+                    throw new Error(result.error.message);
                 }
 
-                document.getElementById('sup_strength').value = str;
-                document.getElementById('sup_weakness').value = weak;
-                document.getElementById('sup_development').value = dev;
+                // 5. 🎁 แกะกล่องของขวัญ เอาข้อความยัดลงฟอร์ม
+                const aiText = result.candidates[0].content.parts[0].text;
+                const parsedData = JSON.parse(aiText);
 
-                customAlert("✨ AI สรุปผลให้เรียบร้อยแล้ว! สามารถปรับแก้ข้อความได้ตามต้องการเลย", "success");
-            }, 1500);
+                document.getElementById('sup_strength').value = parsedData.strength || "";
+                document.getElementById('sup_weakness').value = parsedData.weakness || "";
+                document.getElementById('sup_development').value = parsedData.development || "";
+
+                typeof customAlert === 'function' ? customAlert("✨ AI วิเคราะห์และสรุปผลสำเร็จ!", "success") : alert("วิเคราะห์สำเร็จ!");
+
+            } catch (error) {
+                console.error("Gemini API Error:", error);
+                typeof customAlert === 'function' ? customAlert("❌ AI Error: " + error.message, "error") : alert("AI Error: " + error.message);
+            } finally {
+                if (btn) { btn.innerHTML = origTxt; btn.disabled = false; }
+            }
+        };
+
+        // 💡 ของแถม: เผื่อเพื่อนแกใส่ Key ผิด แกเอาฟังก์ชันนี้ไปผูกกับปุ่มตั้งค่าได้เลย
+        window.resetGeminiAPIKey = function() {
+            localStorage.removeItem('my_gemini_api_key');
+            typeof customAlert === 'function' ? customAlert("🗑️ ลบ API Key ออกจากเครื่องแล้ว กดปุ่ม AI เพื่อตั้งค่าใหม่ได้เลย", "info") : alert("เคลียร์ Key แล้ว!");
         };
 
         // 💾 ฟังก์ชันยิงข้อมูลขึ้นเซิร์ฟเวอร์ (อัปเกรดอัปโหลดรูป)
