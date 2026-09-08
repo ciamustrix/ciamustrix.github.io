@@ -254,7 +254,7 @@
             
             <div class="mt-8 text-center border-t border-gray-200/50 pt-4">
                 <p class="text-xs text-gray-500 font-medium mb-1">โรงเรียนวังตะเคียนวิทยาคม | ฝ่ายบริหารงานวิชาการ</p>
-                <p class="text-[10px] text-sky-700/60 font-bold tracking-wide">V 1.03.04.09 [Sep 4th, 2026 - 04:09:17] | TESTING-f(APIkey)</p>
+                <p class="text-[10px] text-sky-700/60 font-bold tracking-wide">V 1.03.04.09 [Sep 4th, 2026 - 04:09:15] | TESTING-f(APIkey)</p>
                 <p class="text-xs text-gray-500 font-medium mb-1">Dev. by Thuntathorn 😁 | Dedicated to #IWreal and JLT</p>
             </div>
         </div>
@@ -5631,25 +5631,17 @@ window.loadGeminiKeyToInput = function() {
     }
 };
 
-// 2. บันทึกคีย์ลงเครื่อง
-window.saveGeminiKeyToLocal = function() {
-    const keyVal = document.getElementById('profileGeminiKeyInput').value.trim();
-    if (!keyVal) {
-        return typeof customAlert === 'function' ? customAlert("กรุณากรอก API Key ก่อนบันทึกครับ", "warning") : alert("กรอก Key ก่อนครับ");
-    }
-    
-    // ตรวจสอบแพทเทิร์นเบื้องต้น (Gemini Key มักจะขึ้นต้นด้วย 'AIza')
-    if (!keyVal.startsWith("AIza")) {
-         customConfirm("⚠️ API Key ปกติจะขึ้นต้นด้วย 'AIza' คีย์นี้ดูแปลกๆ คุณต้องการบันทึกต่อไปหรือไม่?", () => {
-             localStorage.setItem('my_gemini_api_key', keyVal);
-             typeof customAlert === 'function' ? customAlert("✨ บันทึก API Key ลงเครื่องเรียบร้อยแล้ว!", "success") : alert("บันทึกสำเร็จ!");
-         });
-         return;
-    }
-
-    localStorage.setItem('my_gemini_api_key', keyVal);
-    typeof customAlert === 'function' ? customAlert("✨ บันทึก API Key ลงเครื่องเรียบร้อยแล้ว!", "success") : alert("บันทึกสำเร็จ!");
-};
+// 2. บันทึกคีย์ลงเครื่อง (V.รองรับคีย์ AQ. มาตรฐานใหม่)
+        window.saveGeminiKeyToLocal = function() {
+            const keyVal = document.getElementById('profileGeminiKeyInput').value.trim();
+            if (!keyVal) {
+                return typeof customAlert === 'function' ? customAlert("กรุณากรอก API Key ก่อนบันทึกครับ", "warning") : alert("กรอก Key ก่อนครับ");
+            }
+            
+            // ยกเลิกการดัก AIza เพราะตอนนี้ Google ใช้ AQ. เป็นคีย์มาตรฐานใหม่แล้ว
+            localStorage.setItem('my_gemini_api_key', keyVal);
+            typeof customAlert === 'function' ? customAlert("✨ บันทึก API Key ลงเครื่องเรียบร้อยแล้ว!", "success") : alert("บันทึกสำเร็จ!");
+        };
 
 // 3. ลบคีย์ทิ้ง
 window.clearGeminiKeyFromLocal = function() {
@@ -19546,15 +19538,13 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
             if(scoreEl) scoreEl.innerText = total;
         };
 
-        // 🤖 ฟังก์ชัน AI ช่วยวิเคราะห์ผล (อัปเกรด V. BYOK ดึง Key จาก LocalStorage)
+        // 🤖 ฟังก์ชัน AI ช่วยวิเคราะห์ผล (อัปเกรด V. Bypass OAuth Bug)
         window.generateAISupervisionSummary = async function() {
-            // 1. 🔑 ตรวจสอบ API Key ในเครื่อง
             let apiKey = localStorage.getItem('my_gemini_api_key');
             if (!apiKey) {
-                apiKey = prompt("🔑 กรุณาใส่ Gemini API Key ของคุณเพื่อใช้งาน AI วิเคราะห์ผล:\n(API Key จะถูกเก็บไว้ในเครื่องของคุณเท่านั้น ไม่มีใครเห็นข้อมูลนี้)");
-                if (apiKey) apiKey = apiKey.trim();
+                apiKey = prompt("🔑 กรุณาใส่ Gemini API Key ของคุณเพื่อใช้งาน AI วิเคราะห์ผล:");
                 if (!apiKey) return typeof customAlert === 'function' ? customAlert("คุณต้องใส่ API Key เพื่อใช้งานฟังก์ชันนี้ครับ", "warning") : alert("ต้องใส่ API Key ก่อนครับ");
-                localStorage.setItem('my_gemini_api_key', apiKey);
+                localStorage.setItem('my_gemini_api_key', apiKey.trim());
             }
 
             const radiosChecked = document.querySelectorAll('#dynamicEvaluationFormContainer input[type="radio"]:checked');
@@ -19564,7 +19554,6 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
                 return typeof customAlert === 'function' ? customAlert("⚠️ กรุณาประเมินและให้คะแนนให้ครบทุกข้อก่อนให้ AI ช่วยสรุปผลครับ", "warning") : alert("ให้คะแนนไม่ครบ");
             }
 
-            // 2. 🧹 กวาดคะแนนจากหน้าจอมาปั้นเป็นวัตถุดิบ
             let scoreDataText = "";
             let totalScore = 0;
             let maxScore = 0;
@@ -19586,7 +19575,6 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
                 scoreDataText += "\n";
             });
 
-            // 3. 📜 ปั้น Prompt ระดับมหาเทพ (ตามสูตร INTJ ของแก)
             const promptText = `
 คุณคือผู้เชี่ยวชาญด้านการจัดการเรียนรู้เชิงรุก (Active Learning) ระดับสูง และเป็นศึกษานิเทศก์ผู้วางมาตรฐานวิชาชีพครู
 จงวิเคราะห์คะแนนการประเมินการสอนต่อไปนี้ (คะแนนที่ทำได้ ${totalScore} จากคะแนนเต็ม ${maxScore}):
@@ -19610,28 +19598,29 @@ ${scoreDataText}
             if (btn) { btn.innerHTML = '<div class="loader loader-white mr-2 border-2 inline-block align-middle"></div> AI กำลังคิดวิเคราะห์...'; btn.disabled = true; }
 
             try {
-                // 4. 🚀 ยิงตรงเข้า API ของ Gemini โหมด JSON
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                // 🚀 ยิงตรงเข้า API ของ Gemini โหมด JSON (ย้าย API Key มาไว้ใน Header)
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'x-goog-api-key': apiKey.trim() // 💡 ป้องกันบั๊ก OAuth ด้วยการแนบ Key ใน Header และตัดช่องว่าง
+                    },
                     body: JSON.stringify({
                         contents: [{ parts: [{ text: promptText }] }],
-                        generationConfig: { response_mime_type: "application/json" } // บังคับให้ AI ตอบเป็น JSON เท่านั้น
+                        generationConfig: { response_mime_type: "application/json" }
                     })
                 });
 
                 const result = await response.json();
                 
-                // ดักจับกรณี API Key พังหรือหมดโควต้า
                 if (result.error) {
-                    if (result.error.code === 400 && result.error.message.includes("API key")) {
-                        localStorage.removeItem('my_gemini_api_key'); // ลบ Key เก่าทิ้งทันที
-                        throw new Error("API Key ไม่ถูกต้อง กรุณากดปุ่มเพื่อใส่ Key ใหม่อีกครั้ง");
+                    if (result.error.code === 401 || result.error.code === 400) {
+                        localStorage.removeItem('my_gemini_api_key'); 
+                        throw new Error("API Key ไม่ถูกต้อง กรุณากดปุ่มเพื่อตั้งค่าคีย์ใหม่อีกครั้ง");
                     }
                     throw new Error(result.error.message);
                 }
 
-                // 5. 🎁 แกะกล่องของขวัญ เอาข้อความยัดลงฟอร์ม
                 const aiText = result.candidates[0].content.parts[0].text;
                 const parsedData = JSON.parse(aiText);
 
