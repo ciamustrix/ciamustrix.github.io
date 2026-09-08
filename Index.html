@@ -4088,7 +4088,7 @@
 
     <!-- Application Script (Google Apps Script Version) -->
     <script>
-        // ⏰ ระบบตรวจสอบสถานะเวลาคาบเรียน (อัปเกรดความแม่นยำ)
+        // ⏰ ระบบตรวจสอบสถานะเวลาคาบเรียน (อัปเกรดความแม่นยำ V.กันไทม์โซนเพี้ยน)
         window.getSupTimeStatus = function(targetDateStr, periodStr) {
             if (!targetDateStr || !periodStr) return { state: 'READY', text: '', canEval: true };
 
@@ -4105,15 +4105,14 @@
             };
 
             const now = new Date();
-            const targetDate = new Date(targetDateStr);
             
-            // รีเซ็ตเวลาเป็นเที่ยงคืนเพื่อเทียบแค่วันที่ล้วนๆ
-            const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-            const targetOnly = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate()).getTime();
+            // 💡 หั่นวันที่เป็น String แบบ YYYY-MM-DD เพื่อเทียบตัวอักษรตรงๆ ตัดปัญหา Timezone
+            const todayStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+            const targetStr = targetDateStr.split('T')[0];
 
             // 1. เช็ควันที่ก่อนเลย
-            if (targetOnly > todayOnly) return { state: 'WAIT', text: '⏳ ยังไม่ถึงวันนิเทศ', canEval: false };
-            if (targetOnly < todayOnly) return { state: 'LATE', text: '⚠️ กรุณาประเมินย้อนหลังด้วยครับ', canEval: true };
+            if (targetStr > todayStr) return { state: 'WAIT', text: '⏳ ยังไม่ถึงวันนิเทศ', canEval: false };
+            if (targetStr < todayStr) return { state: 'LATE', text: '⚠️ กรุณาประเมินย้อนหลังด้วยครับ', canEval: true };
 
             // 2. ถ้าเป็น "วันนี้" ให้เช็คเวลาคาบ
             const pInfo = periodTimes[String(periodStr)];
@@ -4127,6 +4126,8 @@
 
             if (now < startTime) return { state: 'WAIT', text: `⏳ ยังไม่ถึงคาบสอน (เริ่ม ${pInfo.start} น.)`, canEval: false };
             if (now > endTime) return { state: 'LATE', text: '⚠️ กรุณาประเมินย้อนหลังด้วยครับ', canEval: true };
+            
+            // 💡 ถ้า "ตอนนี้" อยู่ในคาบเรียนพอดี จะผ่านทุกด่านและคืนค่านี้!
             return { state: 'READY', text: '🟢 กำลังดำเนินการสอน', canEval: true };
         };
         // 🔄 ดึงผังที่นั่งเก่ามาใช้
