@@ -19552,6 +19552,7 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
             let apiKey = localStorage.getItem('my_gemini_api_key');
             if (!apiKey) {
                 apiKey = prompt("🔑 กรุณาใส่ Gemini API Key ของคุณเพื่อใช้งาน AI วิเคราะห์ผล:\n(API Key จะถูกเก็บไว้ในเครื่องของคุณเท่านั้น ไม่มีใครเห็นข้อมูลนี้)");
+                if (apiKey) apiKey = apiKey.trim();
                 if (!apiKey) return typeof customAlert === 'function' ? customAlert("คุณต้องใส่ API Key เพื่อใช้งานฟังก์ชันนี้ครับ", "warning") : alert("ต้องใส่ API Key ก่อนครับ");
                 localStorage.setItem('my_gemini_api_key', apiKey);
             }
