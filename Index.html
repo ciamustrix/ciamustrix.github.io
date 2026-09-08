@@ -254,7 +254,7 @@
             
             <div class="mt-8 text-center border-t border-gray-200/50 pt-4">
                 <p class="text-xs text-gray-500 font-medium mb-1">โรงเรียนวังตะเคียนวิทยาคม | ฝ่ายบริหารงานวิชาการ</p>
-                <p class="text-[10px] text-sky-700/60 font-bold tracking-wide">V 1.03.04.09 [Sep 4th, 2026 - 04:09] | Dev[f(Sv-B)]</p>
+                <p class="text-[10px] text-sky-700/60 font-bold tracking-wide">V 1.03.04.09 [Sep 4th, 2026 - 04:09:01] | TESTING-f(Sv)</p>
                 <p class="text-xs text-gray-500 font-medium mb-1">Dev. by Thuntathorn 😁 | Dedicated to #IWreal and JLT</p>
             </div>
         </div>
@@ -10526,9 +10526,69 @@ window.deleteLog = function(logId) {
             }
 
             // 🧠 โหลดข้อมูลเข้าแท็บนั้นๆ อัตโนมัติ!
-            if (tabId === 'tab-sup-request' && typeof renderSupHistory === 'function') {
-                renderSupHistory();
+            if (tabId === 'tab-sup-request') {
+                if (typeof renderSupHistory === 'function') renderSupHistory();
+
+                // 💡 [NEW LOGIC] ยามเฝ้าประตู (V.2): ตรวจจับ Type A vs Type B
+                let isTypeAActive = false;
+                let alertMessage = "หมดรอบการนิเทศ Type A<br><span class='text-sm text-rose-600 font-bold mt-1 block'>ระบบยังไม่เปิดให้คุณครูยื่นขอรับการนิเทศด้วยตนเองครับ</span>";
+
+                if (typeof masterSwitches_Global !== 'undefined' && masterSwitches_Global['SupervisionMaster']) {
+                    const rounds = masterSwitches_Global['SupervisionMaster'].rounds || [];
+                    const now = new Date(); now.setHours(0,0,0,0);
+                    
+                    const activeRound = rounds.find(r => {
+                        if (!r.start || !r.end) return false;
+                        const s = new Date(r.start); s.setHours(0,0,0,0);
+                        const e = new Date(r.end); e.setHours(23,59,59,999);
+                        return now >= s && now <= e;
+                    });
+
+                    if (activeRound) {
+                        const rType = String(activeRound.type || '').toUpperCase();
+                        const rName = String(activeRound.name || '').toUpperCase();
+
+                        // ถ้าหลังบ้านแกตั้ง type เป็น B หรือชื่อรอบมีคำพวกนี้อยู่ = ล็อกประตู!
+                        if (rType === 'B' || rName.includes('TYPE B') || rName.includes('แบบ B') || rName.includes('ประเมินผล')) {
+                            isTypeAActive = false;
+                            alertMessage = `ขณะนี้เป็นรอบ <b>"${activeRound.name}"</b><br><span class='text-sm text-rose-600 font-bold mt-1 block'>(ระบบนิเทศแบบ Type B ไม่เปิดให้คุณครูยื่นขอรับการนิเทศด้วยตนเองครับ)</span>`;
+                        } else {
+                            // ถ้าตั้งค่าเป็น Type A หรือไม่มีระบุว่าเป็น B ให้ถือว่าเป็น Type A ปกติ
+                            isTypeAActive = true;
+                        }
+                    }
+                }
+
+                const formEl = document.getElementById('supRequestForm');
+                let alertEl = document.getElementById('supRequestClosedAlert');
+
+                if (!isTypeAActive) {
+                    // ปิดฟอร์ม และโชว์ป้ายเตือน
+                    if (formEl) formEl.classList.add('hidden');
+                    
+                    if (!alertEl && formEl) {
+                        alertEl = document.createElement('div');
+                        alertEl.id = 'supRequestClosedAlert';
+                        alertEl.className = 'bg-rose-50 border-2 border-rose-200 rounded-2xl p-8 text-center shadow-sm mt-2 animate-in fade-in zoom-in duration-300';
+                        alertEl.innerHTML = `
+                            <div class="text-5xl mb-4">⚠️</div>
+                            <h4 class="text-xl font-black text-rose-900 mb-2" id="supRequestClosedMsg"></h4>
+                        `;
+                        formEl.parentNode.insertBefore(alertEl, formEl);
+                    } 
+                    
+                    if (alertEl) {
+                        alertEl.classList.remove('hidden');
+                        const msgEl = document.getElementById('supRequestClosedMsg');
+                        if(msgEl) msgEl.innerHTML = alertMessage; // อัปเดตข้อความตามสถานการณ์
+                    }
+                } else {
+                    // เปิดฟอร์ม และซ่อนป้ายเตือน
+                    if (formEl) formEl.classList.remove('hidden');
+                    if (alertEl) alertEl.classList.add('hidden');
+                }
             }
+            
             if (tabId === 'tab-sup-task') {
                 if (typeof renderSupTasks === 'function') renderSupTasks();     
                 if (typeof renderSupHistory === 'function') renderSupHistory(); 
@@ -20086,12 +20146,12 @@ classStudents.sort((a,b) => parseInt(a.No) - parseInt(b.No)).forEach(s => {
                 }
             });
         };
-    // ==========================================
+        // ==========================================
         // 📅 ระบบปฏิทินนิเทศการสอน (Supervision Calendar)
         // ==========================================
         let currentCalMonth = new Date().getMonth();
         let currentCalYear = new Date().getFullYear();
-
+       
         // ==========================================
         // 📅 1. ฟังก์ชันวาดปฏิทินนิเทศ (ปลดล็อกโชว์คิว Pending)
         // ==========================================
