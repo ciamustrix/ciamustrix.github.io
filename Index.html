@@ -12217,6 +12217,30 @@ window.deleteLog = function(logId) {
                     detailsTableHtml += `</tbody></table></div>`;
                 }
 
+                // 💡 โค้ดใหม่: แสดง 3 หัวข้อ (รองรับข้อมูลเก่าที่มัดรวมกันมา)
+                let feedbackHtml = '';
+                if (ev.weakness && ev.development) {
+                    feedbackHtml = `
+                    <div class="mb-2" style="page-break-inside: avoid;"><span class="font-bold text-gray-600 text-sm">1. 🟢 ข้อค้นพบ/จุดเด่น:</span><p class="text-sm mt-1 pl-4">${ev.strengths || '-'}</p></div>
+                    <div class="mb-2" style="page-break-inside: avoid;"><span class="font-bold text-gray-600 text-sm">2. 🟡 จุดที่ควรพัฒนา:</span><p class="text-sm mt-1 pl-4">${ev.weakness || '-'}</p></div>
+                    <div class="mb-4" style="page-break-inside: avoid;"><span class="font-bold text-gray-600 text-sm">3. 🔵 แนวทางพัฒนา:</span><p class="text-sm mt-1 pl-4">${ev.development || '-'}</p></div>
+                    `;
+                } else {
+                    feedbackHtml = `
+                    <div class="mb-2" style="page-break-inside: avoid;"><span class="font-bold text-gray-600 text-sm">1. 🟢 ข้อค้นพบ/จุดเด่น:</span><p class="text-sm mt-1 pl-4">${ev.strengths || '-'}</p></div>
+                    <div class="mb-4" style="page-break-inside: avoid;"><span class="font-bold text-gray-600 text-sm">2. 🟡 ข้อเสนอแนะ:</span><p class="text-sm mt-1 pl-4">${ev.suggestions || '-'}</p></div>
+                    `;
+                }
+
+                // 💡 โค้ดใหม่: จัดการแสดงรูปภาพของกรรมการรายบุคคล
+                let individualPhotosHtml = '';
+                if (ev.photo1 || ev.photo2) {
+                    individualPhotosHtml = `<div class="flex gap-4 mt-4 mb-4 justify-center" style="page-break-inside: avoid;">`;
+                    if (ev.photo1) individualPhotosHtml += `<img src="${getEmbeddableUrl(ev.photo1)}" crossorigin="anonymous" class="h-40 object-cover rounded-xl border border-gray-200 shadow-sm">`;
+                    if (ev.photo2) individualPhotosHtml += `<img src="${getEmbeddableUrl(ev.photo2)}" crossorigin="anonymous" class="h-40 object-cover rounded-xl border border-gray-200 shadow-sm">`;
+                    individualPhotosHtml += `</div>`;
+                }
+
                 const pageBreakStyle = (idx > 0 || !canViewAll) ? 'page-break-before: always; margin-top: 30px;' : '';
 
                 bodyHtml += `
@@ -12226,8 +12250,8 @@ window.deleteLog = function(logId) {
                         <span class="text-2xl">📝</span> <span>กรรมการนิเทศคนที่ ${idx+1}: ${evaluator}</span>
                     </h4>
                     ${detailsTableHtml}
-                    <div class="mb-2" style="page-break-inside: avoid;"><span class="font-bold text-gray-600 text-sm">1. ข้อค้นพบ/จุดเด่น:</span><p class="text-sm mt-1 pl-4">${ev.strengths}</p></div>
-                    <div class="mb-4" style="page-break-inside: avoid;"><span class="font-bold text-gray-600 text-sm">2. ข้อเสนอแนะ:</span><p class="text-sm mt-1 pl-4">${ev.suggestions}</p></div>
+                    ${feedbackHtml}
+                    ${individualPhotosHtml}
                     <div class="flex justify-between items-end border-t border-gray-100 pt-3 mt-2" style="page-break-inside: avoid;">
                         <div>
                             <div class="font-bold text-lg text-gray-700">สรุปผลระดับ: <span class="border-b-2 border-rose-600 text-rose-600 px-2">${ev.result}</span></div>
@@ -19724,11 +19748,13 @@ ${scoreDataText}
                         Signature: currentUser.SavedSignature,
                         EvalData: { 
                             strengths: strengths, 
-                            suggestions: "จุดควรพัฒนา: " + weakness + "แนวทางแก้ไข: " + suggestions, 
+                            weakness: weakness,          // 👈 แยกจุดที่ควรพัฒนา
+                            development: suggestions,    // 👈 แยกแนวทางพัฒนา
+                            suggestions: suggestions,    // 👈 เก็บเป็น Fallback ไว้เผื่อระบบเก่าเรียกหา
                             result: resultVal,
                             score: totalScore,
                             percent: percent,
-                            details: detailedScores, // 👈 แทรกบรรทัดนี้เพิ่มเข้าไป!
+                            details: detailedScores,
                             photo1: photo1, 
                             photo2: photo2  
                         }
